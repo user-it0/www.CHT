@@ -15,6 +15,9 @@ body {
 header {
   padding: 10px;
   background-color: #f7f7f7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 input[readonly] {
   border: none;
@@ -72,10 +75,12 @@ input[readonly] {
 .message-input {
   display: flex;
 }
-.message-input input {
+.message-input textarea {
   flex: 1;
   padding: 10px;
   border: 1px solid #ccc;
+  width: 100%;
+  resize: none;
 }
 .message-input button {
   padding: 10px;
@@ -85,23 +90,31 @@ button {
 }
 
 /* メッセージの左右配置 */
+/* 自分のメッセージは右寄せ、内容に合わせて自動調節 */
 .message-self {
-  text-align: right;
+  display: inline-block;
   background-color: #dcf8c6;
   margin: 5px;
   padding: 5px 10px;
   border-radius: 10px;
   max-width: 80%;
-  margin-left: auto;
 }
+/* 右寄せ用のコンテナ */
+.message-container-self {
+  text-align: right;
+}
+/* 相手のメッセージは左寄せ */
 .message-other {
-  text-align: left;
+  display: inline-block;
   background-color: #fff;
   margin: 5px;
   padding: 5px 10px;
   border-radius: 10px;
   max-width: 80%;
-  margin-right: auto;
+}
+/* 左寄せ用のコンテナ */
+.message-container-other {
+  text-align: left;
 }
 
 /* 送信時刻表示 */

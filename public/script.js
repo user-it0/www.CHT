@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function() {
-  // Socket.IO 初期化
+  // Socket.IO 初期化（接続先 URL は実際のサーバーのURLに合わせる）
   const socket = io();
 
   // グローバル変数
@@ -28,54 +28,40 @@ document.addEventListener("DOMContentLoaded", function() {
   const chatInput = document.getElementById("chat-input");
   const sendMessageBtn = document.getElementById("send-message");
 
-  // 設定モーダル用要素
   const openSettingsBtn = document.getElementById("open-settings");
-  const settingsModal = document.getElementById("settings-modal");
+  const settingsPanel = document.getElementById("settings-panel");
   const closeSettingsBtn = document.getElementById("close-settings");
   const settingsForm = document.getElementById("settings-form");
-  const birthdayInput = document.getElementById("birthday");
-  const newUsernameInput = document.getElementById("new-username");
-  const newPasswordInput = document.getElementById("new-password");
 
-  // ページ遷移のフェードアウト／フェードイン処理
-  function fadeOut(element, callback) {
-    element.style.opacity = 1;
-    (function fade() {
-      if ((element.style.opacity -= 0.1) < 0) {
-        element.style.display = "none";
-        if (callback) callback();
-      } else {
-        requestAnimationFrame(fade);
-      }
-    })();
-  }
-  function fadeIn(element, display = "block") {
-    element.style.opacity = 0;
-    element.style.display = display;
-    (function fade() {
-      let val = parseFloat(element.style.opacity);
-      if (!((val += 0.1) > 1)) {
-        element.style.opacity = val;
-        requestAnimationFrame(fade);
-      }
-    })();
+  // ページ切替（フェードアウト・フェードイン）
+  function showPage(showElem) {
+    document.querySelectorAll('.page').forEach(page => {
+      page.style.opacity = 0;
+      setTimeout(() => { page.style.display = "none"; }, 500);
+    });
+    setTimeout(() => {
+      showElem.style.display = "block";
+      setTimeout(() => { showElem.style.opacity = 1; }, 50);
+    }, 500);
   }
 
   // フォーム切替
   toRegistrationBtn.addEventListener("click", function() {
-    fadeOut(loginDiv, () => { fadeIn(registrationDiv); });
+    loginDiv.style.display = "none";
+    registrationDiv.style.display = "block";
   });
   toLoginBtn.addEventListener("click", function() {
-    fadeOut(registrationDiv, () => { fadeIn(loginDiv); });
+    registrationDiv.style.display = "none";
+    loginDiv.style.display = "block";
   });
 
-  // ユーザー登録
+  // 新規ユーザー登録
   registrationForm.addEventListener("submit", async function(e) {
     e.preventDefault();
     const username = document.getElementById("register-username").value;
     const password = document.getElementById("register-password").value;
     try {
-      const res = await fetch('/register', {
+      const res = await fetch('/server/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -99,7 +85,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const username = document.getElementById("login-username").value;
     const password = document.getElementById("login-password").value;
     try {
-      const res = await fetch('/login', {
+      const res = await fetch('/server/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -120,24 +106,24 @@ document.addEventListener("DOMContentLoaded", function() {
   // ホーム画面表示
   function showHomePage() {
     displayUsername.value = currentUser.username;
-    pageAuth.style.display = "none";
-    fadeIn(pageHome);
-    pageChat.style.display = "none";
+    showPage(pageHome);
     socket.emit('join', currentUser.username);
     loadApprovedFriends();
     loadFriendRequests();
   }
 
-  // 承認済み友達の取得
+  // 承認済み友達一覧取得
   async function loadApprovedFriends() {
     try {
-      const res = await fetch(`/approvedFriends?username=${currentUser.username}`);
+      const res = await fetch(`/server/approvedFriends?username=${currentUser.username}`);
       const data = await res.json();
       renderApprovedFriends(data.approvedFriends);
     } catch(err) {
       console.error(err);
     }
   }
+
+  // 承認済み友達リストレンダリング
   function renderApprovedFriends(friends) {
     contactListUl.innerHTML = "";
     friends.forEach(friend => {
@@ -151,16 +137,18 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // 友達リクエストの取得とレンダリング
+  // 友達リクエスト一覧取得
   async function loadFriendRequests() {
     try {
-      const res = await fetch(`/friendRequests?username=${currentUser.username}`);
+      const res = await fetch(`/server/friendRequests?username=${currentUser.username}`);
       const data = await res.json();
       renderFriendRequests(data.friendRequests);
     } catch(err) {
       console.error(err);
     }
   }
+
+  // 友達リクエストレンダリング
   function renderFriendRequests(requests) {
     friendRequestsUl.innerHTML = "";
     requests.forEach(requester => {
@@ -182,9 +170,11 @@ document.addEventListener("DOMContentLoaded", function() {
       friendRequestsUl.appendChild(li);
     });
   }
+
+  // 友達リクエスト応答
   async function respondFriendRequest(from, response) {
     try {
-      const res = await fetch('/respondFriendRequest', {
+      const res = await fetch('/server/respondFriendRequest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: currentUser.username, from, response })
@@ -198,17 +188,13 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   }
 
-  // リアルタイム更新：友達リクエスト、友達リスト
-  socket.on('friendRequest', (data) => { loadFriendRequests(); });
-  socket.on('friendRequestUpdate', (data) => { loadApprovedFriends(); });
-
-  // ユーザー検索機能
+  // ユーザー検索
   userSearchInput.addEventListener("input", async function() {
     const query = this.value.trim().toLowerCase();
     searchResultUl.innerHTML = "";
     if(query === "") return;
     try {
-      const res = await fetch(`/users?username=${currentUser.username}`);
+      const res = await fetch(`/server/users?username=${currentUser.username}`);
       const data = await res.json();
       const results = data.users.filter(u => u.toLowerCase().includes(query));
       results.forEach(user => {
@@ -216,8 +202,9 @@ document.addEventListener("DOMContentLoaded", function() {
         li.textContent = user;
         li.className = "contact-item";
         li.addEventListener("click", async function() {
+          // 友達追加リクエスト送信
           try {
-            const res = await fetch('/sendFriendRequest', {
+            const res = await fetch('/server/sendFriendRequest', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ from: currentUser.username, to: user })
@@ -235,129 +222,150 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   });
 
-  // チャット画面を開く：チャット履歴取得と既読処理
-  function openChat(friend) {
-    currentChatFriend = friend;
-    fadeOut(pageHome, () => {
-      fadeIn(pageChat);
-      messageHistory.innerHTML = "";
-      fetch(`/chatHistory?user1=${currentUser.username}&user2=${friend}`)
-        .then(res => res.json())
-        .then(data => {
-           if(data.chatHistory && data.chatHistory.length > 0) {
-               data.chatHistory.forEach(msgObj => { displayMessage(msgObj); });
-           } else {
-               const welcome = document.createElement("div");
-               welcome.textContent = "チャット開始: " + friend;
-               messageHistory.appendChild(welcome);
-           }
-           messageHistory.scrollTop = messageHistory.scrollHeight;
-           // 既読処理
-           fetch('/markAsRead', {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ user1: currentUser.username, user2: friend })
-           });
-        })
-        .catch(err => {
-           console.error(err);
-           const welcome = document.createElement("div");
-           welcome.textContent = "チャット開始: " + friend;
-           messageHistory.appendChild(welcome);
-        });
-    });
-  }
-
-  // メッセージ表示（改行対応、左右配置、タイムスタンプ、既読表示）
-  function displayMessage(msgObj) {
-    const bubble = document.createElement("div");
-    bubble.classList.add("message-bubble");
-    const time = new Date(msgObj.timestamp);
-    const timeStr = time.toLocaleString();
-    // 改行文字を <br> に変換
-    const formattedMessage = msgObj.message.replace(/\n/g, '<br>');
-    if(msgObj.from === currentUser.username) {
-      bubble.classList.add("message-self");
-      bubble.innerHTML = `<div>${formattedMessage}</div><div class="timestamp">${timeStr} ${msgObj.read ? '✓✓' : '✓'}</div>`;
-    } else {
-      bubble.classList.add("message-other");
-      bubble.innerHTML = `<div>${formattedMessage}</div><div class="timestamp">${timeStr}</div>`;
-    }
-    messageHistory.appendChild(bubble);
-  }
-
-  // 戻るボタン：ホーム画面に遷移
-  backToHomeBtn.addEventListener("click", function() {
-    fadeOut(pageChat, () => { fadeIn(pageHome); });
+  // 設定パネルの表示／非表示
+  openSettingsBtn.addEventListener("click", function() {
+    settingsPanel.style.display = "block";
+  });
+  closeSettingsBtn.addEventListener("click", function() {
+    settingsPanel.style.display = "none";
   });
 
-  // メッセージ送信
+  // 設定内容更新
+  settingsForm.addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const newUsername = document.getElementById("new-username").value;
+    const newPassword = document.getElementById("new-password").value;
+    const birthday = document.getElementById("birthday").value;
+    if(confirm("設定を保存しますか？")) {
+      try {
+        const res = await fetch('/server/updateUser', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: currentUser.username,
+            newUsername,
+            newPassword,
+            birthday
+          })
+        });
+        const data = await res.json();
+        alert(data.message);
+        currentUser = data.user;
+        displayUsername.value = currentUser.username;
+        settingsPanel.style.display = "none";
+      } catch(err) {
+        console.error(err);
+      }
+    }
+  });
+
+  // チャット画面を開く（履歴取得＆既読処理）
+  function openChat(friend) {
+    currentChatFriend = friend;
+    showPage(pageChat);
+    messageHistory.innerHTML = "";
+    fetch(`/server/chatHistory?user1=${currentUser.username}&user2=${friend}`)
+      .then(res => res.json())
+      .then(data => {
+         if(data.chatHistory && data.chatHistory.length > 0) {
+             data.chatHistory.forEach(msgObj => {
+                 appendMessage(msgObj);
+             });
+         } else {
+             const welcome = document.createElement("div");
+             welcome.textContent = "チャット開始: " + friend;
+             messageHistory.appendChild(welcome);
+         }
+         messageHistory.scrollTop = messageHistory.scrollHeight;
+         // 既読処理：送信側が友達なら通知
+         socket.emit('markRead', { user1: currentUser.username, user2: friend });
+      })
+      .catch(err => {
+         console.error(err);
+         const welcome = document.createElement("div");
+         welcome.textContent = "チャット開始: " + friend;
+         messageHistory.appendChild(welcome);
+      });
+  }
+
+  // メッセージ表示用共通関数（左右配置・タイムスタンプ・既読表示付き）
+  function appendMessage(msgObj) {
+    const container = document.createElement("div");
+    // 送信者が自分なら右寄せ用コンテナ、そうでなければ左寄せ用コンテナ
+    if(msgObj.from === currentUser.username) {
+      container.className = "message-container-self";
+    } else {
+      container.className = "message-container-other";
+    }
+    const msgDiv = document.createElement("div");
+    // 自分のメッセージは message-self、相手は message-other
+    if(msgObj.from === currentUser.username) {
+      msgDiv.className = "message-self";
+    } else {
+      msgDiv.className = "message-other";
+    }
+    // メッセージ本文
+    msgDiv.textContent = msgObj.message;
+    container.appendChild(msgDiv);
+    // タイムスタンプ
+    const ts = document.createElement("span");
+    ts.className = "timestamp";
+    ts.textContent = new Date(msgObj.timestamp).toLocaleString();
+    container.appendChild(ts);
+    // 送信メッセージなら既読状態表示用
+    if(msgObj.from === currentUser.username) {
+      const readStatus = document.createElement("span");
+      readStatus.className = "read-status";
+      readStatus.textContent = msgObj.read ? "既読" : "未読";
+      msgDiv.setAttribute("data-id", msgObj.id);
+      container.appendChild(readStatus);
+    }
+    messageHistory.appendChild(container);
+  }
+
+  // チャット送信処理
   sendMessageBtn.addEventListener("click", function() {
     const msg = chatInput.value.trim();
     if(msg === "" || !currentChatFriend) return;
-    const messageObj = {
+    // 一意のIDはサンプル用
+    const msgId = Date.now() + '-' + Math.floor(Math.random()*1000);
+    const timestamp = new Date().toISOString();
+    const msgObj = {
+      id: msgId,
       from: currentUser.username,
       to: currentChatFriend,
       message: msg,
-      timestamp: new Date().toISOString(),
+      timestamp: timestamp,
       read: false
     };
-    displayMessage(messageObj);
+    appendMessage(msgObj);
     socket.emit('private message', { to: currentChatFriend, message: msg });
     chatInput.value = "";
     messageHistory.scrollTop = messageHistory.scrollHeight;
   });
 
-  // 受信メッセージ
+  // 受信したプライベートメッセージの表示
   socket.on('private message', (data) => {
-    if(data.from === currentChatFriend) {
-      displayMessage(data);
-      messageHistory.scrollTop = messageHistory.scrollHeight;
-    }
+    appendMessage(data);
+    messageHistory.scrollTop = messageHistory.scrollHeight;
   });
 
-  // 設定モーダルの操作
-  openSettingsBtn.addEventListener("click", function() {
-    birthdayInput.value = currentUser.birthday || "";
-    newUsernameInput.value = "";
-    newPasswordInput.value = "";
-    settingsModal.style.display = "block";
-  });
-  closeSettingsBtn.addEventListener("click", function() {
-    settingsModal.style.display = "none";
-  });
-  window.addEventListener("click", function(event) {
-    if (event.target == settingsModal) settingsModal.style.display = "none";
-  });
-  settingsForm.addEventListener("submit", async function(e) {
-    e.preventDefault();
-    const newBirthday = birthdayInput.value;
-    const newUsername = newUsernameInput.value;
-    const newPassword = newPasswordInput.value;
-    if(confirm("変更内容を保存しますか？")) {
-      try {
-        const res = await fetch('/updateProfile', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            currentUsername: currentUser.username, 
-            newUsername, 
-            newPassword, 
-            birthday: newBirthday 
-          })
-        });
-        const data = await res.json();
-        if(data.error) {
-          alert(data.error);
-        } else {
-          currentUser = data.user;
-          displayUsername.value = currentUser.username;
-          alert("プロフィールが更新されました");
-          settingsModal.style.display = "none";
+  // 既読通知の受信：送信者側のメッセージ更新
+  socket.on('readReceipt', (data) => {
+    data.messageIds.forEach(id => {
+      const el = document.querySelector(`[data-id="${id}"]`);
+      if (el) {
+        const rs = el.parentElement.querySelector(".read-status");
+        if(rs) {
+          rs.textContent = "既読";
         }
-      } catch(err) {
-        console.error(err);
       }
-    }
+    });
+  });
+
+  // リアルタイムで友達リクエスト受信
+  socket.on('friendRequest', (data) => {
+    alert("新しい友達リクエスト: " + data.from);
+    loadFriendRequests();
   });
 });
