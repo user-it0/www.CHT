@@ -4,19 +4,18 @@ body {
   margin: 0;
   padding: 0;
 }
-
-/* ページ全体のフェードイン・フェードアウト */
 .page {
-  transition: opacity 0.5s ease;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+.page.show {
+  opacity: 1;
 }
 
-/* ヘッダー */
+/* Header styling */
 header {
   padding: 10px;
   background-color: #f7f7f7;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 input[readonly] {
   border: none;
@@ -24,7 +23,7 @@ input[readonly] {
   font-size: 1.2em;
 }
 
-/* フォームコンテナ */
+/* Form styling */
 .form-container {
   max-width: 400px;
   margin: 50px auto;
@@ -33,8 +32,16 @@ input[readonly] {
   border-radius: 8px;
 }
 
-/* リスト styling */
-.contact-list, #search-result, #friend-requests {
+/* Search section */
+.search-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+}
+
+/* List styling */
+.contact-list, #search-result, #friend-requests, #group-list {
   list-style: none;
   padding: 0;
 }
@@ -43,13 +50,13 @@ input[readonly] {
   padding: 10px;
   display: flex;
   align-items: center;
-  cursor: pointer;
 }
 .contact-item:hover {
   background-color: #f0f0f0;
+  cursor: pointer;
 }
 
-/* Chat container styling */
+/* Chat styling */
 .chat-container {
   display: flex;
   flex-direction: column;
@@ -79,15 +86,6 @@ button {
   cursor: pointer;
 }
 
-/* メッセージ表示 */
-.message {
-  max-width: 80%;
-  margin: 5px;
-  padding: 8px;
-  border-radius: 10px;
-  position: relative;
-  font-size: 0.95em;
-}
 /* Message alignment */
 .message-sent {
   text-align: right;
@@ -107,39 +105,33 @@ button {
   max-width: 70%;
 }
 
+/* Timestamp styling */
 .timestamp {
-  display: block;
-  font-size: 0.75em;
-  color: #555;
-  margin-top: 3px;
-}
-.read-status {
-  font-size: 0.75em;
-  color: #007aff;
+  font-size: 0.7em;
+  color: #888;
 }
 
-/* Settings（モーダル） */
+/* Modal styling for group creation */
 .modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0,0,0,0.5);
-  transition: opacity 0.3s ease;
+  background: rgba(0,0,0,0.5);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 }
 .modal-content {
-  background-color: #fff;
+  background: #fff;
   padding: 20px;
   border-radius: 8px;
-  max-width: 400px;
   width: 90%;
+  max-width: 400px;
 }
 
-/* Responsive */
+/* Responsive Design */
 @media (max-width: 600px) {
   .chat-container, .form-container {
     width: 95%;
