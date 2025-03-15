@@ -5,6 +5,15 @@ body {
   padding: 0;
 }
 
+/* ページフェードイン用（必要に応じて使用） */
+.page {
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+.page.show {
+  opacity: 1;
+}
+
 /* Header styling */
 header {
   padding: 10px;
@@ -20,6 +29,7 @@ input[readonly] {
 }
 
 /* Form styling */
+.form-container,
 #page-auth > div {
   max-width: 400px;
   margin: 50px auto;
@@ -29,8 +39,19 @@ input[readonly] {
   transition: opacity 0.5s ease;
 }
 
+/* Search section */
+.search-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+}
+
 /* List styling */
-.contact-list, #search-result, #friend-requests {
+.contact-list, 
+#search-result, 
+#friend-requests, 
+#group-list {
   list-style: none;
   padding: 0;
 }
@@ -46,7 +67,7 @@ input[readonly] {
   cursor: pointer;
 }
 
-/* Chat styling */
+/* Chat container styling */
 .chat-container {
   display: flex;
   flex-direction: column;
@@ -77,60 +98,51 @@ button {
   cursor: pointer;
 }
 
-/* Chat bubble styling */
-.message-bubble {
-  max-width: 70%;
-  margin: 5px;
-  padding: 10px;
-  border-radius: 10px;
-  position: relative;
-  word-wrap: break-word;
-}
-.message-self {
-  background-color: #dcf8c6;
-  align-self: flex-end;
+/* チャットバブルの左右配置（LINE風） */
+.message-sent {
   text-align: right;
+  background-color: #dcf8c6;
+  padding: 5px;
+  margin: 5px;
+  border-radius: 10px;
+  max-width: 70%;
+  margin-left: auto;
 }
-.message-other {
-  background-color: #fff;
-  align-self: flex-start;
+.message-received {
   text-align: left;
+  background-color: #fff;
+  padding: 5px;
+  margin: 5px;
+  border-radius: 10px;
+  max-width: 70%;
 }
+
+/* Timestamp styling */
 .timestamp {
   font-size: 0.7em;
   color: #888;
   margin-top: 3px;
 }
 
-/* Read receipt indicator for self messages */
-.read-receipt {
-  font-size: 0.7em;
-  color: #4fc3f7;
-  margin-top: 3px;
-}
-
-/* Modal styling for settings */
+/* Modal styling for settings (またはグループ作成) */
 .modal {
-  display: block; /* 初期は style="display:none;" で非表示 */
   position: fixed;
-  z-index: 1;
-  left: 0;
   top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.4);
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
   transition: opacity 0.5s ease;
 }
 .modal-content {
-  background-color: #fefefe;
-  margin: 15% auto;
+  background: #fff;
   padding: 20px;
-  border: 1px solid #888;
-  width: 80%;
-  max-width: 400px;
   border-radius: 8px;
-  position: relative;
+  width: 90%;
+  max-width: 400px;
 }
 .close {
   color: #aaa;
@@ -142,7 +154,7 @@ button {
 
 /* Responsive Design */
 @media (max-width: 600px) {
-  .chat-container, #page-auth > div {
+  .chat-container, .form-container, #page-auth > div {
     width: 95%;
     margin: 10px auto;
   }
