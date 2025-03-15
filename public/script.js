@@ -293,8 +293,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // メッセージ送信
   sendMessageBtn.addEventListener("click", function() {
-    const msg = chatInput.value.trim();
-    if(msg === "" || !currentChatFriend) return;
+    const msg = chatInput.value;
+    if(msg.trim() === "" || !currentChatFriend) return;
     const messageObj = {
       from: currentUser.username,
       to: currentChatFriend,

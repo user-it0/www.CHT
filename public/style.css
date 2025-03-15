@@ -64,19 +64,16 @@ input[readonly] {
 }
 .message-input {
   display: flex;
+  gap: 5px;
 }
+
+/* 変更：入力欄を textarea に対応 */
 .message-input textarea {
   flex: 1;
   padding: 10px;
   border: 1px solid #ccc;
   resize: vertical;
-  font-family: inherit;
-}
-.message-input button {
-  padding: 10px;
-}
-button {
-  cursor: pointer;
+  min-height: 50px;
 }
 
 /* Chat bubble styling */
@@ -87,7 +84,7 @@ button {
   border-radius: 10px;
   position: relative;
   word-wrap: break-word;
-  white-space: pre-wrap; /* 改行を保持 */
+  white-space: pre-wrap; /* 改行を反映 */
 }
 .message-self {
   background-color: #dcf8c6;
