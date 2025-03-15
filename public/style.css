@@ -66,7 +66,7 @@ input[readonly] {
   display: flex;
 }
 
-/* 入力エリア：<textarea> 用スタイルを追加 */
+/* 入力エリア：<textarea> 用スタイル */
 .message-input textarea {
   flex: 1;
   padding: 10px;
@@ -75,7 +75,6 @@ input[readonly] {
   font-family: inherit;
   font-size: 1em;
 }
-
 .message-input button {
   padding: 10px;
   border: 1px solid #ccc;
@@ -84,29 +83,30 @@ input[readonly] {
 
 /* Chat bubble styling */
 .message-bubble {
-  max-width: 70%;
-  margin: 5px;
+  display: inline-block;
+  max-width: 60%;
+  margin: 8px;
   padding: 10px;
   border-radius: 10px;
-  position: relative;
-  word-wrap: break-word;
+  word-break: break-all;
 }
 .message-self {
   background-color: #dcf8c6;
-  align-self: flex-end;
   text-align: right;
+  /* 右側に固定 */
+  margin-left: auto;
 }
 .message-other {
   background-color: #fff;
-  align-self: flex-start;
   text-align: left;
+  /* 左側に固定 */
+  margin-right: auto;
 }
 .timestamp {
   font-size: 0.7em;
   color: #888;
   margin-top: 3px;
 }
-
 /* Read receipt indicator for self messages */
 .read-receipt {
   font-size: 0.7em;

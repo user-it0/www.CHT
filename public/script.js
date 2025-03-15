@@ -274,7 +274,7 @@ document.addEventListener("DOMContentLoaded", function() {
     bubble.classList.add("message-bubble");
     const time = new Date(msgObj.timestamp);
     const timeStr = time.toLocaleString();
-    // 改行を <br> タグに変換して表示
+    // 改行文字を <br> に変換
     const formattedMessage = msgObj.message.replace(/\n/g, '<br>');
     if(msgObj.from === currentUser.username) {
       bubble.classList.add("message-self");
