@@ -268,13 +268,13 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // メッセージ表示（左右配置、タイムスタンプ、既読表示）
+  // メッセージ表示（改行対応、左右配置、タイムスタンプ、既読表示）
   function displayMessage(msgObj) {
     const bubble = document.createElement("div");
     bubble.classList.add("message-bubble");
     const time = new Date(msgObj.timestamp);
     const timeStr = time.toLocaleString();
-    // 改行を <br> に変換して表示
+    // 改行を <br> タグに変換して表示
     const formattedMessage = msgObj.message.replace(/\n/g, '<br>');
     if(msgObj.from === currentUser.username) {
       bubble.classList.add("message-self");
@@ -293,8 +293,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // メッセージ送信
   sendMessageBtn.addEventListener("click", function() {
-    const msg = chatInput.value;
-    if(msg.trim() === "" || !currentChatFriend) return;
+    const msg = chatInput.value.trim();
+    if(msg === "" || !currentChatFriend) return;
     const messageObj = {
       from: currentUser.username,
       to: currentChatFriend,
