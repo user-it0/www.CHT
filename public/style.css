@@ -4,14 +4,18 @@ body {
   margin: 0;
   padding: 0;
 }
+.page {
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+.page.show {
+  opacity: 1;
+}
 
 /* Header styling */
 header {
   padding: 10px;
   background-color: #f7f7f7;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 input[readonly] {
   border: none;
@@ -20,17 +24,24 @@ input[readonly] {
 }
 
 /* Form styling */
-#page-auth > div {
+.form-container {
   max-width: 400px;
   margin: 50px auto;
   padding: 20px;
   border: 1px solid #ccc;
   border-radius: 8px;
-  transition: opacity 0.5s ease;
+}
+
+/* Search section */
+.search-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
 }
 
 /* List styling */
-.contact-list, #search-result, #friend-requests {
+.contact-list, #search-result, #friend-requests, #group-list {
   list-style: none;
   padding: 0;
 }
@@ -39,7 +50,6 @@ input[readonly] {
   padding: 10px;
   display: flex;
   align-items: center;
-  transition: background-color 0.3s;
 }
 .contact-item:hover {
   background-color: #f0f0f0;
@@ -54,7 +64,6 @@ input[readonly] {
   max-width: 600px;
   margin: 20px auto;
   border: 1px solid #ccc;
-  transition: all 0.5s ease;
 }
 .message-history {
   flex: 1;
@@ -65,89 +74,66 @@ input[readonly] {
 .message-input {
   display: flex;
 }
-
-/* 入力エリア：<textarea> 用スタイル */
-.message-input textarea {
+.message-input input {
   flex: 1;
   padding: 10px;
   border: 1px solid #ccc;
-  resize: vertical;
-  font-family: inherit;
-  font-size: 1em;
 }
 .message-input button {
   padding: 10px;
-  border: 1px solid #ccc;
-  background-color: #eee;
+}
+button {
+  cursor: pointer;
 }
 
-/* Chat bubble styling */
-.message-bubble {
-  display: inline-block;
-  max-width: 60%;
-  margin: 8px;
-  padding: 10px;
-  border-radius: 10px;
-  word-break: break-all;
-}
-.message-self {
-  background-color: #dcf8c6;
+/* Message alignment */
+.message-sent {
   text-align: right;
-  /* 右側に固定 */
+  background-color: #dcf8c6;
+  padding: 5px;
+  margin: 5px;
+  border-radius: 10px;
+  max-width: 70%;
   margin-left: auto;
 }
-.message-other {
-  background-color: #fff;
+.message-received {
   text-align: left;
-  /* 左側に固定 */
-  margin-right: auto;
+  background-color: #fff;
+  padding: 5px;
+  margin: 5px;
+  border-radius: 10px;
+  max-width: 70%;
 }
+
+/* Timestamp styling */
 .timestamp {
   font-size: 0.7em;
   color: #888;
-  margin-top: 3px;
-}
-/* Read receipt indicator for self messages */
-.read-receipt {
-  font-size: 0.7em;
-  color: #4fc3f7;
-  margin-top: 3px;
 }
 
-/* Modal styling for settings */
+/* Modal styling for group creation */
 .modal {
-  display: block; /* 初期は style="display:none;" で非表示 */
   position: fixed;
-  z-index: 1;
-  left: 0;
   top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.4);
-  transition: opacity 0.5s ease;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 .modal-content {
-  background-color: #fefefe;
-  margin: 15% auto;
+  background: #fff;
   padding: 20px;
-  border: 1px solid #888;
-  width: 80%;
-  max-width: 400px;
   border-radius: 8px;
-  position: relative;
-}
-.close {
-  color: #aaa;
-  float: right;
-  font-size: 28px;
-  font-weight: bold;
-  cursor: pointer;
+  width: 90%;
+  max-width: 400px;
 }
 
 /* Responsive Design */
 @media (max-width: 600px) {
-  .chat-container, #page-auth > div {
+  .chat-container, .form-container {
     width: 95%;
     margin: 10px auto;
   }
