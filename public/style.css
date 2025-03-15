@@ -1,143 +1,152 @@
 /* Base styling */
 body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Header styling */
+header {
+  padding: 10px;
+  background-color: #f7f7f7;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+input[readonly] {
+  border: none;
+  background-color: transparent;
+  font-size: 1.2em;
+}
+
+/* Form styling */
+#page-auth > div {
+  max-width: 400px;
+  margin: 50px auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  transition: opacity 0.5s ease;
+}
+
+/* List styling */
+.contact-list, #search-result, #friend-requests {
+  list-style: none;
+  padding: 0;
+}
+.contact-item {
+  border-bottom: 1px solid #ccc;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.3s;
+}
+.contact-item:hover {
+  background-color: #f0f0f0;
+  cursor: pointer;
+}
+
+/* Chat styling */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 90vh;
+  max-width: 600px;
+  margin: 20px auto;
+  border: 1px solid #ccc;
+  transition: all 0.5s ease;
+}
+.message-history {
+  flex: 1;
+  overflow-y: auto;
+  border-bottom: 1px solid #ccc;
+  padding: 10px;
+}
+.message-input {
+  display: flex;
+}
+.message-input input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+}
+.message-input button {
+  padding: 10px;
+}
+button {
+  cursor: pointer;
+}
+
+/* Chat bubble styling */
+.message-bubble {
+  max-width: 70%;
+  margin: 5px;
+  padding: 10px;
+  border-radius: 10px;
+  position: relative;
+  word-wrap: break-word;
+}
+.message-self {
+  background-color: #dcf8c6;
+  align-self: flex-end;
+  text-align: right;
+}
+.message-other {
+  background-color: #fff;
+  align-self: flex-start;
+  text-align: left;
+}
+.timestamp {
+  font-size: 0.7em;
+  color: #888;
+  margin-top: 3px;
+}
+
+/* Read receipt indicator for self messages */
+.read-receipt {
+  font-size: 0.7em;
+  color: #4fc3f7;
+  margin-top: 3px;
+}
+
+/* Modal styling for settings */
+.modal {
+  display: block; /* 初期は style="display:none;" で非表示 */
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.4);
+  transition: opacity 0.5s ease;
+}
+.modal-content {
+  background-color: #fefefe;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  max-width: 400px;
+  border-radius: 8px;
+  position: relative;
+}
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .chat-container, #page-auth > div {
+    width: 95%;
+    margin: 10px auto;
   }
-  
-  /* ページ全体のフェードイン・フェードアウト */
-  .page {
-    transition: opacity 0.5s ease;
+  header input[readonly] {
+    font-size: 1em;
   }
-  
-  /* ヘッダー */
-  header {
-    padding: 10px;
-    background-color: #f7f7f7;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  input[readonly] {
-    border: none;
-    background-color: transparent;
-    font-size: 1.2em;
-  }
-  
-  /* フォームコンテナ */
-  .form-container {
-    max-width: 400px;
-    margin: 50px auto;
-    padding: 20px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-  }
-  
-  /* リスト styling */
-  .contact-list, #search-result, #friend-requests {
-    list-style: none;
-    padding: 0;
-  }
-  .contact-item {
-    border-bottom: 1px solid #ccc;
-    padding: 10px;
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-  }
-  .contact-item:hover {
-    background-color: #f0f0f0;
-  }
-  
-  /* Chat container styling */
-  .chat-container {
-    display: flex;
-    flex-direction: column;
-    height: 90vh;
-    max-width: 600px;
-    margin: 20px auto;
-    border: 1px solid #ccc;
-  }
-  .message-history {
-    flex: 1;
-    overflow-y: auto;
-    border-bottom: 1px solid #ccc;
-    padding: 10px;
-  }
-  .message-input {
-    display: flex;
-  }
-  .message-input input {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #ccc;
-  }
-  .message-input button {
-    padding: 10px;
-  }
-  button {
-    cursor: pointer;
-  }
-  
-  /* メッセージ表示 */
-  .message {
-    max-width: 80%;
-    margin: 5px;
-    padding: 8px;
-    border-radius: 10px;
-    position: relative;
-    font-size: 0.95em;
-  }
-  .message-sent {
-    background-color: #dcf8c6;
-    margin-left: auto;
-    text-align: right;
-  }
-  .message-received {
-    background-color: #fff;
-    margin-right: auto;
-    text-align: left;
-  }
-  .timestamp {
-    display: block;
-    font-size: 0.75em;
-    color: #555;
-    margin-top: 3px;
-  }
-  .read-status {
-    font-size: 0.75em;
-    color: #007aff;
-  }
-  
-  /* Settings（モーダル） */
-  .modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5);
-    transition: opacity 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .modal-content {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    max-width: 400px;
-    width: 90%;
-  }
-  
-  /* Responsive */
-  @media (max-width: 600px) {
-    .chat-container, .form-container {
-      width: 95%;
-      margin: 10px auto;
-    }
-    header input[readonly] {
-      font-size: 1em;
-    }
-  }
-  
+}
