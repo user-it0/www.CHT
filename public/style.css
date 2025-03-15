@@ -65,10 +65,12 @@ input[readonly] {
 .message-input {
   display: flex;
 }
-.message-input input {
+.message-input textarea {
   flex: 1;
   padding: 10px;
   border: 1px solid #ccc;
+  resize: vertical;
+  font-family: inherit;
 }
 .message-input button {
   padding: 10px;
@@ -85,6 +87,7 @@ button {
   border-radius: 10px;
   position: relative;
   word-wrap: break-word;
+  white-space: pre-wrap; /* 改行を保持 */
 }
 .message-self {
   background-color: #dcf8c6;

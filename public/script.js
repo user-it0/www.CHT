@@ -274,12 +274,14 @@ document.addEventListener("DOMContentLoaded", function() {
     bubble.classList.add("message-bubble");
     const time = new Date(msgObj.timestamp);
     const timeStr = time.toLocaleString();
+    // 改行を <br> に変換して表示
+    const formattedMessage = msgObj.message.replace(/\n/g, '<br>');
     if(msgObj.from === currentUser.username) {
       bubble.classList.add("message-self");
-      bubble.innerHTML = `<div>${msgObj.message}</div><div class="timestamp">${timeStr} ${msgObj.read ? '✓✓' : '✓'}</div>`;
+      bubble.innerHTML = `<div>${formattedMessage}</div><div class="timestamp">${timeStr} ${msgObj.read ? '✓✓' : '✓'}</div>`;
     } else {
       bubble.classList.add("message-other");
-      bubble.innerHTML = `<div>${msgObj.message}</div><div class="timestamp">${timeStr}</div>`;
+      bubble.innerHTML = `<div>${formattedMessage}</div><div class="timestamp">${timeStr}</div>`;
     }
     messageHistory.appendChild(bubble);
   }
