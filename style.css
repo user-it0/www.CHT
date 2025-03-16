@@ -32,6 +32,13 @@ input[readonly] {
   padding: 20px;
   border: 1px solid #ccc;
   border-radius: 8px;
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+
+/* Fade class for smooth form切替 */
+.fade {
+  transition: opacity 0.5s ease;
 }
 
 /* Search section */
@@ -81,7 +88,7 @@ input[readonly] {
   border: 1px solid #ccc;
   width: 100%;
   box-sizing: border-box;
-  resize: none; /* ユーザーによるリサイズを禁止 */
+  resize: none; /* ユーザーによるリサイズ禁止 */
 }
 .message-input button {
   padding: 10px;
@@ -91,7 +98,6 @@ button {
 }
 
 /* メッセージの左右配置 */
-/* 自分のメッセージ（緑色）は内容に合わせ自動調節 */
 .message-self {
   float: right;
   clear: both;
@@ -113,11 +119,17 @@ button {
   display: inline-block;
 }
 
-/* 送信時刻表示 */
+/* 送信時刻表示と既読状態（時刻と同じ文字サイズ・青色） */
 .timestamp {
-  display: block;
+  display: inline-block;
   font-size: 0.7em;
   color: #999;
+  margin-right: 5px;
+}
+.read-status {
+  display: inline-block;
+  font-size: 0.7em;
+  color: blue;
 }
 
 /* モーダル styling */

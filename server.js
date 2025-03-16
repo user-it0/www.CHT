@@ -25,7 +25,7 @@ app.use(express.json());
 // 静的ファイル（index.html, style.css, script.js）をルートから提供
 app.use(express.static(__dirname));
 
-// ヘルパー：データを保存する関数
+// ヘルパー：データ保存関数
 function saveData() {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
@@ -54,7 +54,7 @@ app.post('/login', (req, res) => {
   res.json({ message: 'ログイン成功', user });
 });
 
-// ユーザー一覧取得（ログインユーザーは除く）
+// ユーザー一覧取得（ログインユーザーを除く）
 app.get('/users', (req, res) => {
   const { username } = req.query;
   const userList = data.users.filter(u => u.username !== username).map(u => u.username);
@@ -74,7 +74,7 @@ app.post('/sendFriendRequest', (req, res) => {
   target.friendRequests.push(from);
   saveData();
   res.json({ message: '友達追加リクエストを送信しました' });
-  // リアルタイム通知（対象ユーザーのルームに送信）
+  // リアルタイム通知：対象ユーザーのルームに送信
   io.to(to).emit('friendRequest', { from });
 });
 
@@ -149,9 +149,8 @@ io.on('connection', (socket) => {
     console.log(username + ' joined their room');
   });
   
-  // プライベートメッセージ送信
+  // プライベートメッセージ送信（送信者にはローカルで表示済みのためエコーは行わない）
   socket.on('private message', (msgData) => {
-    // msgData: { to, message }
     const msgObj = {
       id: Date.now() + '-' + Math.floor(Math.random() * 1000),
       from: socket.username,
@@ -160,11 +159,8 @@ io.on('connection', (socket) => {
       timestamp: new Date().toISOString(),
       read: false
     };
-    // 送信先と自分自身にメッセージを送信
     io.to(msgData.to).emit('private message', msgObj);
-    socket.emit('private message', msgObj);
-    
-    // 永続的チャット履歴に保存
+    // 永続チャット履歴に保存
     const convKey = [socket.username, msgData.to].sort().join('|');
     if (!data.chatHistory[convKey]) {
       data.chatHistory[convKey] = [];
@@ -175,7 +171,6 @@ io.on('connection', (socket) => {
   
   // 既読処理
   socket.on('markRead', (info) => {
-    // info: { user1, user2 } → user1: 現在の（受信側）ユーザー, user2: チャット相手（送信側）
     const convKey = [info.user1, info.user2].sort().join('|');
     if (data.chatHistory[convKey]) {
       const updatedIds = [];
