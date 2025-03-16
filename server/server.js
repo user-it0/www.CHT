@@ -8,11 +8,11 @@ const path = require('path');
 app.use(express.json());
 app.use(express.static('public'));
 
-// ファイルパス設定
+// ファイルパスの設定
 const chatHistoryFile = path.join(__dirname, 'chatHistory.json');
 const usersFile = path.join(__dirname, 'users.json');
 
-// ユーザー情報の永続化（users.json）
+// ユーザー情報の永続化：users.json
 let users = [];
 if (fs.existsSync(usersFile)) {
   try {
@@ -23,7 +23,7 @@ if (fs.existsSync(usersFile)) {
   }
 }
 
-// チャット履歴の永続化（chatHistory.json）
+// チャット履歴の永続化：chatHistory.json
 let chatHistory = {};
 if (fs.existsSync(chatHistoryFile)) {
   try {
@@ -155,7 +155,7 @@ app.get('/chatHistory', (req, res) => {
 io.on('connection', (socket) => {
   console.log('a user connected');
   
-  // ユーザー名を受け取り、そのユーザー専用ルームに参加
+  // ユーザー名を受け取り、専用ルームに参加
   socket.on('join', (username) => {
     socket.username = username;
     socket.join(username);
@@ -172,8 +172,12 @@ io.on('connection', (socket) => {
       timestamp: new Date().toISOString(),
       read: false
     };
+    // 送信先へリアルタイム送信
     io.to(data.to).emit('private message', msgObj);
+    // 自分にも送信（表示用）
     socket.emit('private message', msgObj);
+    
+    // チャット履歴に保存
     const conversationKey = [socket.username, data.to].sort().join('|');
     if (!chatHistory[conversationKey]) {
       chatHistory[conversationKey] = [];

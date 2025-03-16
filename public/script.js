@@ -1,12 +1,12 @@
 document.addEventListener("DOMContentLoaded", function() {
-  // Socket.IO 初期化（接続先 URL は実際のサーバーのURLに合わせる）
+  // Socket.IO 初期化（接続先URLは実際のRenderサーバーのURLに合わせてください）
   const socket = io();
 
   // グローバル変数
   let currentUser = null;
   let currentChatFriend = null;
 
-  // DOM 要素取得
+  // DOM要素取得
   const pageAuth = document.getElementById("page-auth");
   const loginForm = document.getElementById("form-login");
   const registrationForm = document.getElementById("form-register");
@@ -137,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // 友達リクエスト一覧取得
+  // 友達リクエスト取得
   async function loadFriendRequests() {
     try {
       const res = await fetch(`/server/friendRequests?username=${currentUser.username}`);
@@ -188,7 +188,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   }
 
-  // ユーザー検索
+  // ユーザー検索（結果は検索欄の下にリスト表示）
   userSearchInput.addEventListener("input", async function() {
     const query = this.value.trim().toLowerCase();
     searchResultUl.innerHTML = "";
@@ -230,7 +230,7 @@ document.addEventListener("DOMContentLoaded", function() {
     settingsPanel.style.display = "none";
   });
 
-  // 設定内容更新
+  // 設定更新
   settingsForm.addEventListener("submit", async function(e) {
     e.preventDefault();
     const newUsername = document.getElementById("new-username").value;
@@ -277,7 +277,6 @@ document.addEventListener("DOMContentLoaded", function() {
              messageHistory.appendChild(welcome);
          }
          messageHistory.scrollTop = messageHistory.scrollHeight;
-         // 既読処理：送信側が友達なら通知
          socket.emit('markRead', { user1: currentUser.username, user2: friend });
       })
       .catch(err => {
@@ -288,46 +287,35 @@ document.addEventListener("DOMContentLoaded", function() {
       });
   }
 
-  // メッセージ表示用共通関数（左右配置・タイムスタンプ・既読表示付き）
+  // メッセージ追加（左右配置、タイムスタンプ、既読状態付き）
   function appendMessage(msgObj) {
-    const container = document.createElement("div");
-    // 送信者が自分なら右寄せ用コンテナ、そうでなければ左寄せ用コンテナ
+    const div = document.createElement("div");
     if(msgObj.from === currentUser.username) {
-      container.className = "message-container-self";
+      div.className = "message-self";
     } else {
-      container.className = "message-container-other";
+      div.className = "message-other";
     }
-    const msgDiv = document.createElement("div");
-    // 自分のメッセージは message-self、相手は message-other
-    if(msgObj.from === currentUser.username) {
-      msgDiv.className = "message-self";
-    } else {
-      msgDiv.className = "message-other";
-    }
-    // メッセージ本文
-    msgDiv.textContent = msgObj.message;
-    container.appendChild(msgDiv);
-    // タイムスタンプ
+    const textDiv = document.createElement("div");
+    textDiv.textContent = msgObj.message;
+    div.appendChild(textDiv);
     const ts = document.createElement("span");
     ts.className = "timestamp";
     ts.textContent = new Date(msgObj.timestamp).toLocaleString();
-    container.appendChild(ts);
-    // 送信メッセージなら既読状態表示用
+    div.appendChild(ts);
     if(msgObj.from === currentUser.username) {
+      div.setAttribute("data-id", msgObj.id);
       const readStatus = document.createElement("span");
       readStatus.className = "read-status";
       readStatus.textContent = msgObj.read ? "既読" : "未読";
-      msgDiv.setAttribute("data-id", msgObj.id);
-      container.appendChild(readStatus);
+      div.appendChild(readStatus);
     }
-    messageHistory.appendChild(container);
+    messageHistory.appendChild(div);
   }
 
   // チャット送信処理
   sendMessageBtn.addEventListener("click", function() {
     const msg = chatInput.value.trim();
     if(msg === "" || !currentChatFriend) return;
-    // 一意のIDはサンプル用
     const msgId = Date.now() + '-' + Math.floor(Math.random()*1000);
     const timestamp = new Date().toISOString();
     const msgObj = {
@@ -344,21 +332,18 @@ document.addEventListener("DOMContentLoaded", function() {
     messageHistory.scrollTop = messageHistory.scrollHeight;
   });
 
-  // 受信したプライベートメッセージの表示
+  // プライベートメッセージ受信
   socket.on('private message', (data) => {
     appendMessage(data);
     messageHistory.scrollTop = messageHistory.scrollHeight;
   });
 
-  // 既読通知の受信：送信者側のメッセージ更新
+  // 既読通知受信
   socket.on('readReceipt', (data) => {
     data.messageIds.forEach(id => {
-      const el = document.querySelector(`[data-id="${id}"]`);
+      const el = document.querySelector(`[data-id="${id}"] .read-status`);
       if (el) {
-        const rs = el.parentElement.querySelector(".read-status");
-        if(rs) {
-          rs.textContent = "既読";
-        }
+        el.textContent = "既読";
       }
     });
   });

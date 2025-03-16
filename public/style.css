@@ -75,11 +75,12 @@ input[readonly] {
 .message-input {
   display: flex;
 }
-.message-input textarea {
+.message-input input {
   flex: 1;
   padding: 10px;
   border: 1px solid #ccc;
   width: 100%;
+  box-sizing: border-box;
   resize: none;
 }
 .message-input button {
@@ -89,32 +90,26 @@ button {
   cursor: pointer;
 }
 
-/* メッセージの左右配置 */
-/* 自分のメッセージは右寄せ、内容に合わせて自動調節 */
+/* メッセージの左右配置（LINE風） */
 .message-self {
-  display: inline-block;
+  float: right;
+  clear: both;
   background-color: #dcf8c6;
   margin: 5px;
   padding: 5px 10px;
   border-radius: 10px;
   max-width: 80%;
-}
-/* 右寄せ用のコンテナ */
-.message-container-self {
-  text-align: right;
-}
-/* 相手のメッセージは左寄せ */
-.message-other {
   display: inline-block;
+}
+.message-other {
+  float: left;
+  clear: both;
   background-color: #fff;
   margin: 5px;
   padding: 5px 10px;
   border-radius: 10px;
   max-width: 80%;
-}
-/* 左寄せ用のコンテナ */
-.message-container-other {
-  text-align: left;
+  display: inline-block;
 }
 
 /* 送信時刻表示 */

@@ -54,7 +54,7 @@
     </header>
     <section>
       <input type="text" id="user-search" placeholder="ユーザー検索">
-      <!-- ユーザー検索結果（連絡可能ユーザーリスト風に表示） -->
+      <!-- ユーザー検索結果（友達追加候補）は検索欄の下にリスト形式で表示 -->
       <ul id="search-result"></ul>
     </section>
     <section>
@@ -73,14 +73,13 @@
     <div class="chat-container">
       <div class="message-history" id="message-history"></div>
       <div class="message-input">
-        <!-- 入力欄は textarea に変更、手動リサイズ不可 -->
-        <textarea id="chat-input" placeholder="メッセージを入力"></textarea>
+        <input type="text" id="chat-input" placeholder="メッセージを入力">
         <button id="send-message">送信</button>
       </div>
     </div>
   </div>
 
-  <!-- Settings Panel -->
+  <!-- Settings Panel (モーダル) -->
   <div id="settings-panel" class="modal">
     <div class="modal-content">
       <span class="close" id="close-settings">&times;</span>
@@ -106,7 +105,7 @@
     </div>
   </div>
 
-  <!-- Socket.IO クライアントライブラリ（接続先は実際のサーバーURLに合わせてください） -->
+  <!-- Socket.IO クライアントライブラリ（接続先URLは実際にRenderでデプロイしたサーバーのURLに変更してください） -->
   <script src="https://your-deployed-server-domain/socket.io/socket.io.js"></script>
   <script src="script.js"></script>
 </body>
