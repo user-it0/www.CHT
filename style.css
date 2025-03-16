@@ -119,7 +119,7 @@ button {
   display: inline-block;
 }
 
-/* 送信時刻表示と既読状態（時刻と同じ文字サイズ・青色） */
+/* 送信時刻表示と既読状態（同じ文字サイズ、青色で表示） */
 .timestamp {
   display: inline-block;
   font-size: 0.7em;

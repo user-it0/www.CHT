@@ -149,7 +149,7 @@ io.on('connection', (socket) => {
     console.log(username + ' joined their room');
   });
   
-  // プライベートメッセージ送信（送信者にはローカルで表示済みのためエコーは行わない）
+  // プライベートメッセージ送信（送信者は自分側で既に表示しているためエコー送信は行わない）
   socket.on('private message', (msgData) => {
     const msgObj = {
       id: Date.now() + '-' + Math.floor(Math.random() * 1000),
@@ -169,7 +169,7 @@ io.on('connection', (socket) => {
     saveData();
   });
   
-  // 既読処理
+  // 既読処理：チャット画面が開いている場合、受信したメッセージを既読にする
   socket.on('markRead', (info) => {
     const convKey = [info.user1, info.user2].sort().join('|');
     if (data.chatHistory[convKey]) {

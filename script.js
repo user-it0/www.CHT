@@ -129,7 +129,7 @@ document.addEventListener("DOMContentLoaded", function() {
     loadFriendRequests();
   }
 
-  // 戻るボタンの機能（チャット画面からホーム画面へ）
+  // 戻るボタンの機能（チャット画面からホーム画面へ戻る）
   backToHomeBtn.addEventListener("click", function() {
     showPage(pageHome);
   });
@@ -298,7 +298,7 @@ document.addEventListener("DOMContentLoaded", function() {
              messageHistory.appendChild(welcome);
          }
          messageHistory.scrollTop = messageHistory.scrollHeight;
-         // 既読処理
+         // チャット画面が開いているので既読処理を実行
          socket.emit('markRead', { user1: currentUser.username, user2: friend });
       })
       .catch(err => {
@@ -311,10 +311,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // メッセージ追加（左右配置、タイムスタンプと既読状態を時刻横に表示）
   function appendMessage(msgObj) {
-    // 既に自分の送信メッセージを追加済みの場合は、重複しないようチェック（data-id 属性が同じなら追加しない）
-    if (msgObj.from === currentUser.username) {
-      if(document.querySelector(`[data-id="${msgObj.id}"]`)) return;
-    }
+    // 重複表示防止（自分の送信メッセージは既に追加済みならスキップ）
+    if (msgObj.from === currentUser.username && document.querySelector(`[data-id="${msgObj.id}"]`)) return;
     const div = document.createElement("div");
     if(msgObj.from === currentUser.username) {
       div.className = "message-self";
@@ -329,7 +327,7 @@ document.addEventListener("DOMContentLoaded", function() {
     ts.className = "timestamp";
     ts.textContent = new Date(msgObj.timestamp).toLocaleString();
     div.appendChild(ts);
-    // 既読状態（送信メッセージのみ、時刻横に同じサイズで青色）
+    // 既読状態（自分の送信メッセージのみ）
     if(msgObj.from === currentUser.username) {
       div.setAttribute("data-id", msgObj.id);
       const readStatus = document.createElement("span");
@@ -344,7 +342,7 @@ document.addEventListener("DOMContentLoaded", function() {
   sendMessageBtn.addEventListener("click", function() {
     const msg = chatInput.value.trim();
     if(msg === "" || !currentChatFriend) return;
-    // 自分で一度だけメッセージを追加
+    // 自分のメッセージはローカルで1回だけ追加
     const msgId = Date.now() + '-' + Math.floor(Math.random() * 1000);
     const timestamp = new Date().toISOString();
     const msgObj = {
@@ -356,18 +354,32 @@ document.addEventListener("DOMContentLoaded", function() {
       read: false
     };
     appendMessage(msgObj);
-    // サーバーへ送信（サーバー側は送信者へのエコー送信を行わない）
+    // サーバーへ送信（サーバー側は送信側へのエコー送信は行わない）
     socket.emit('private message', { to: currentChatFriend, message: msg });
     chatInput.value = "";
     messageHistory.scrollTop = messageHistory.scrollHeight;
   });
 
-  // プライベートメッセージ受信（自分が送信したメッセージはサーバーからのエコーを受け取らない）
+  // プライベートメッセージ受信
   socket.on('private message', (data) => {
-    // 受信側のみ追加（自分が送信した場合は、すでにローカルで追加済み）
+    // 受信側のみ追加（自分の送信メッセージは既に追加済み）
     if(data.from !== currentUser.username) {
       appendMessage(data);
       messageHistory.scrollTop = messageHistory.scrollHeight;
+      // チャット画面が開いており、対象が現在のチャット相手なら既読処理を実行
+      if(pageChat.style.display !== "none" && currentChatFriend === data.from) {
+        socket.emit('markRead', { user1: currentUser.username, user2: data.from });
+      }
+      // ブラウザの通知（音は鳴らさない）
+      if (Notification.permission === "granted") {
+        new Notification("新着メッセージ", { body: data.message });
+      } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            new Notification("新着メッセージ", { body: data.message });
+          }
+        });
+      }
     }
   });
 
