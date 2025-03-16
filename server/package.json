@@ -1,10 +1,10 @@
 {
   "name": "smart-chat-app-server",
   "version": "1.0.0",
-  "description": "Node.js server for Smart Chat App with persistent data storage",
+  "description": "Node.js server for Smart Chat App with persistent chat history and user settings",
   "main": "server.js",
   "scripts": {
-    "start": "node server/server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",

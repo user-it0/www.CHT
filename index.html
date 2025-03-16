@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CHT</title>
+  <title>スマートチャットアプリ</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -54,7 +54,6 @@
     </header>
     <section>
       <input type="text" id="user-search" placeholder="ユーザー検索">
-      <!-- 友達追加候補リストをユーザー検索欄の下に表示 -->
       <ul id="search-result"></ul>
     </section>
     <section>
@@ -80,9 +79,8 @@
   </div>
 
   <!-- Settings Panel -->
-  <div id="settings-panel" class="modal">
+  <div id="settings-panel" class="modal" style="display:none;">
     <div class="modal-content">
-      <span class="close" id="close-settings">&times;</span>
       <h2>設定</h2>
       <form id="settings-form">
         <label>
@@ -101,12 +99,11 @@
         </label>
         <br>
         <button type="submit">変更を保存</button>
+        <button type="button" id="close-settings">キャンセル</button>
       </form>
     </div>
   </div>
 
-  <!-- Socket.IO のクライアントライブラリ -->
-  <!-- ※以下のURLは実際にサーバーをデプロイした際のURLに変更してください -->
   <script src="https://your-deployed-server-domain/socket.io/socket.io.js"></script>
   <script src="script.js"></script>
 </body>
