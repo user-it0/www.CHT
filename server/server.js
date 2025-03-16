@@ -6,7 +6,8 @@ const fs = require('fs');
 const path = require('path');
 
 app.use(express.json());
-app.use(express.static('public'));
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../public')));
 
 // --- 永続化用ファイルパスの設定 ---
 const chatHistoryFile = path.join(__dirname, 'chatHistory.json');
