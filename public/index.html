@@ -54,6 +54,7 @@
     </header>
     <section>
       <input type="text" id="user-search" placeholder="ユーザー検索">
+      <!-- 友達追加候補リストをユーザー検索欄の下に表示 -->
       <ul id="search-result"></ul>
     </section>
     <section>
@@ -79,8 +80,9 @@
   </div>
 
   <!-- Settings Panel -->
-  <div id="settings-panel" class="modal" style="display:none;">
+  <div id="settings-panel" class="modal">
     <div class="modal-content">
+      <span class="close" id="close-settings">&times;</span>
       <h2>設定</h2>
       <form id="settings-form">
         <label>
@@ -99,11 +101,11 @@
         </label>
         <br>
         <button type="submit">変更を保存</button>
-        <button type="button" id="close-settings">キャンセル</button>
       </form>
     </div>
   </div>
 
+  <!-- Socket.IO のクライアントライブラリ（接続先URLは実際のサーバーに合わせて変更してください） -->
   <script src="https://your-deployed-server-domain/socket.io/socket.io.js"></script>
   <script src="script.js"></script>
 </body>

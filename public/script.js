@@ -1,12 +1,12 @@
 document.addEventListener("DOMContentLoaded", function() {
-  // Socket.IO 初期化（接続先 URL はサーバーの実際のURLに合わせる）
+  // Socket.IO 初期化（接続先 URL は実際のサーバーのURLに合わせてください）
   const socket = io();
 
   // グローバル変数
   let currentUser = null;
   let currentChatFriend = null;
 
-  // DOM 要素取得
+  // DOM 要素の取得
   const pageAuth = document.getElementById("page-auth");
   const loginForm = document.getElementById("form-login");
   const registrationForm = document.getElementById("form-register");
@@ -137,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // 友達リクエスト一覧取得
+  // 友達リクエスト取得
   async function loadFriendRequests() {
     try {
       const res = await fetch(`/server/friendRequests?username=${currentUser.username}`);
@@ -148,7 +148,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   }
 
-  // 友達リクエストレンダリング（リアルタイム更新用に後で Socket.IO で受信可能に）
+  // 友達リクエストレンダリング
   function renderFriendRequests(requests) {
     friendRequestsUl.innerHTML = "";
     requests.forEach(requester => {
@@ -202,7 +202,6 @@ document.addEventListener("DOMContentLoaded", function() {
         li.textContent = user;
         li.className = "contact-item";
         li.addEventListener("click", async function() {
-          // 友達追加リクエスト送信
           try {
             const res = await fetch('/server/sendFriendRequest', {
               method: 'POST',
@@ -224,13 +223,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // 設定パネルの表示／非表示
   openSettingsBtn.addEventListener("click", function() {
-    settingsPanel.style.display = "flex";
+    settingsPanel.style.display = "block";
   });
   closeSettingsBtn.addEventListener("click", function() {
     settingsPanel.style.display = "none";
   });
 
-  // 設定内容更新
+  // 設定更新
   settingsForm.addEventListener("submit", async function(e) {
     e.preventDefault();
     const newUsername = document.getElementById("new-username").value;
@@ -277,7 +276,6 @@ document.addEventListener("DOMContentLoaded", function() {
              messageHistory.appendChild(welcome);
          }
          messageHistory.scrollTop = messageHistory.scrollHeight;
-         // 既読処理：送信側が友達なら通知
          socket.emit('markRead', { user1: currentUser.username, user2: friend });
       })
       .catch(err => {
@@ -288,33 +286,27 @@ document.addEventListener("DOMContentLoaded", function() {
       });
   }
 
-  // メッセージ表示用共通関数（左右配置・タイムスタンプ・既読表示付き）
+  // メッセージ追加（左右配置、タイムスタンプ、既読状態付き）
   function appendMessage(msgObj) {
     const div = document.createElement("div");
-    div.className = "message";
-    // 自分が送信したメッセージ → 右寄せ、相手の → 左寄せ
     if(msgObj.from === currentUser.username) {
-      div.classList.add("message-sent");
+      div.className = "message-self";
     } else {
-      div.classList.add("message-received");
+      div.className = "message-other";
     }
-    // メッセージ本文
     const textDiv = document.createElement("div");
     textDiv.textContent = msgObj.message;
     div.appendChild(textDiv);
-    // タイムスタンプ
     const ts = document.createElement("span");
     ts.className = "timestamp";
     ts.textContent = new Date(msgObj.timestamp).toLocaleString();
     div.appendChild(ts);
-    // 送信メッセージなら既読状態表示用
     if(msgObj.from === currentUser.username) {
+      div.setAttribute("data-id", msgObj.id);
       const readStatus = document.createElement("span");
       readStatus.className = "read-status";
       readStatus.textContent = msgObj.read ? "既読" : "未読";
       div.appendChild(readStatus);
-      // 要素にメッセージIDを設定（後で更新できるように）
-      div.setAttribute("data-id", msgObj.id);
     }
     messageHistory.appendChild(div);
   }
@@ -323,7 +315,6 @@ document.addEventListener("DOMContentLoaded", function() {
   sendMessageBtn.addEventListener("click", function() {
     const msg = chatInput.value.trim();
     if(msg === "" || !currentChatFriend) return;
-    // 自分で作成した一意のID（サーバー側でも生成するが、ここは暫定表示用）
     const msgId = Date.now() + '-' + Math.floor(Math.random()*1000);
     const timestamp = new Date().toISOString();
     const msgObj = {
@@ -340,17 +331,14 @@ document.addEventListener("DOMContentLoaded", function() {
     messageHistory.scrollTop = messageHistory.scrollHeight;
   });
 
-  // 受信したプライベートメッセージの表示
+  // プライベートメッセージ受信
   socket.on('private message', (data) => {
-    // data: { from, message, id, timestamp, read }
-    // data.id, timestamp はサーバー側で生成する（今回はサンプル）
     appendMessage(data);
     messageHistory.scrollTop = messageHistory.scrollHeight;
   });
 
-  // 既読通知の受信：送信者側のメッセージを更新
+  // 既読通知受信
   socket.on('readReceipt', (data) => {
-    // data: { conversationKey, messageIds }
     data.messageIds.forEach(id => {
       const el = document.querySelector(`[data-id="${id}"] .read-status`);
       if (el) {
@@ -359,9 +347,8 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   });
 
-  // リアルタイムで友達リクエスト受信（※サーバー側からのイベント通知を想定）
+  // リアルタイムで友達リクエスト受信
   socket.on('friendRequest', (data) => {
-    // data: { from }
     alert("新しい友達リクエスト: " + data.from);
     loadFriendRequests();
   });
