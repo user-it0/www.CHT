@@ -81,7 +81,7 @@ input[readonly] {
   border: 1px solid #ccc;
   width: 100%;
   box-sizing: border-box;
-  resize: none;
+  resize: none; /* ユーザーによるリサイズを禁止 */
 }
 .message-input button {
   padding: 10px;
@@ -91,6 +91,7 @@ button {
 }
 
 /* メッセージの左右配置 */
+/* 自分のメッセージ（緑色）は内容に合わせ自動調節 */
 .message-self {
   float: right;
   clear: both;

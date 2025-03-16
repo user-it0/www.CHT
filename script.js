@@ -1,12 +1,12 @@
 document.addEventListener("DOMContentLoaded", function() {
-  // Socket.IO 初期化（接続先 URL は実際のサーバーのURLに合わせてください）
+  // Socket.IO 初期化（接続先URLは実際のサーバーURLに合わせる）
   const socket = io();
 
   // グローバル変数
   let currentUser = null;
   let currentChatFriend = null;
 
-  // DOM 要素の取得
+  // DOM 要素取得
   const pageAuth = document.getElementById("page-auth");
   const loginForm = document.getElementById("form-login");
   const registrationForm = document.getElementById("form-register");
@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const username = document.getElementById("register-username").value;
     const password = document.getElementById("register-password").value;
     try {
-      const res = await fetch('/server/register', {
+      const res = await fetch('/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -85,7 +85,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const username = document.getElementById("login-username").value;
     const password = document.getElementById("login-password").value;
     try {
-      const res = await fetch('/server/login', {
+      const res = await fetch('/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", function() {
   // 承認済み友達一覧取得
   async function loadApprovedFriends() {
     try {
-      const res = await fetch(`/server/approvedFriends?username=${currentUser.username}`);
+      const res = await fetch(`/approvedFriends?username=${currentUser.username}`);
       const data = await res.json();
       renderApprovedFriends(data.approvedFriends);
     } catch(err) {
@@ -140,7 +140,7 @@ document.addEventListener("DOMContentLoaded", function() {
   // 友達リクエスト取得
   async function loadFriendRequests() {
     try {
-      const res = await fetch(`/server/friendRequests?username=${currentUser.username}`);
+      const res = await fetch(`/friendRequests?username=${currentUser.username}`);
       const data = await res.json();
       renderFriendRequests(data.friendRequests);
     } catch(err) {
@@ -174,7 +174,7 @@ document.addEventListener("DOMContentLoaded", function() {
   // 友達リクエスト応答
   async function respondFriendRequest(from, response) {
     try {
-      const res = await fetch('/server/respondFriendRequest', {
+      const res = await fetch('/respondFriendRequest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: currentUser.username, from, response })
@@ -188,13 +188,13 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   }
 
-  // ユーザー検索
+  // ユーザー検索（検索結果は検索欄の下に表示）
   userSearchInput.addEventListener("input", async function() {
     const query = this.value.trim().toLowerCase();
     searchResultUl.innerHTML = "";
     if(query === "") return;
     try {
-      const res = await fetch(`/server/users?username=${currentUser.username}`);
+      const res = await fetch(`/users?username=${currentUser.username}`);
       const data = await res.json();
       const results = data.users.filter(u => u.toLowerCase().includes(query));
       results.forEach(user => {
@@ -203,7 +203,7 @@ document.addEventListener("DOMContentLoaded", function() {
         li.className = "contact-item";
         li.addEventListener("click", async function() {
           try {
-            const res = await fetch('/server/sendFriendRequest', {
+            const res = await fetch('/sendFriendRequest', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ from: currentUser.username, to: user })
@@ -237,7 +237,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const birthday = document.getElementById("birthday").value;
     if(confirm("設定を保存しますか？")) {
       try {
-        const res = await fetch('/server/updateUser', {
+        const res = await fetch('/updateUser', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -263,7 +263,7 @@ document.addEventListener("DOMContentLoaded", function() {
     currentChatFriend = friend;
     showPage(pageChat);
     messageHistory.innerHTML = "";
-    fetch(`/server/chatHistory?user1=${currentUser.username}&user2=${friend}`)
+    fetch(`/chatHistory?user1=${currentUser.username}&user2=${friend}`)
       .then(res => res.json())
       .then(data => {
          if(data.chatHistory && data.chatHistory.length > 0) {
@@ -276,6 +276,7 @@ document.addEventListener("DOMContentLoaded", function() {
              messageHistory.appendChild(welcome);
          }
          messageHistory.scrollTop = messageHistory.scrollHeight;
+         // 既読処理
          socket.emit('markRead', { user1: currentUser.username, user2: friend });
       })
       .catch(err => {
@@ -311,11 +312,11 @@ document.addEventListener("DOMContentLoaded", function() {
     messageHistory.appendChild(div);
   }
 
-  // チャット送信処理
+  // チャット送信
   sendMessageBtn.addEventListener("click", function() {
     const msg = chatInput.value.trim();
     if(msg === "" || !currentChatFriend) return;
-    const msgId = Date.now() + '-' + Math.floor(Math.random()*1000);
+    const msgId = Date.now() + '-' + Math.floor(Math.random() * 1000);
     const timestamp = new Date().toISOString();
     const msgObj = {
       id: msgId,
@@ -347,7 +348,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   });
 
-  // リアルタイムで友達リクエスト受信
+  // リアルタイム友達リクエスト受信
   socket.on('friendRequest', (data) => {
     alert("新しい友達リクエスト: " + data.from);
     loadFriendRequests();
