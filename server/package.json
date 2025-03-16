@@ -1,8 +1,8 @@
 {
   "name": "smart-chat-app-server",
   "version": "1.0.0",
-  "description": "Node.js server for Smart Chat App with persistent storage",
-  "main": "node server/server.js",
+  "description": "Node.js server for Smart Chat App with persistent data storage",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },

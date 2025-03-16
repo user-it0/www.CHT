@@ -1,12 +1,12 @@
 document.addEventListener("DOMContentLoaded", function() {
-  // Socket.IO 初期化（接続先URLは実際のRenderサーバーのURLに合わせてください）
+  // Socket.IO 初期化（接続先URLは実際のサーバーURLに合わせる）
   const socket = io();
 
   // グローバル変数
   let currentUser = null;
   let currentChatFriend = null;
 
-  // DOM要素取得
+  // DOM 要素の取得
   const pageAuth = document.getElementById("page-auth");
   const loginForm = document.getElementById("form-login");
   const registrationForm = document.getElementById("form-register");
@@ -188,7 +188,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   }
 
-  // ユーザー検索（結果は検索欄の下にリスト表示）
+  // ユーザー検索
   userSearchInput.addEventListener("input", async function() {
     const query = this.value.trim().toLowerCase();
     searchResultUl.innerHTML = "";
@@ -202,7 +202,6 @@ document.addEventListener("DOMContentLoaded", function() {
         li.textContent = user;
         li.className = "contact-item";
         li.addEventListener("click", async function() {
-          // 友達追加リクエスト送信
           try {
             const res = await fetch('/server/sendFriendRequest', {
               method: 'POST',
@@ -348,7 +347,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   });
 
-  // リアルタイムで友達リクエスト受信
+  // 友達リクエストのリアルタイム受信
   socket.on('friendRequest', (data) => {
     alert("新しい友達リクエスト: " + data.from);
     loadFriendRequests();

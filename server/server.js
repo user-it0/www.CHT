@@ -8,33 +8,32 @@ const path = require('path');
 app.use(express.json());
 app.use(express.static('public'));
 
-// ファイルパスの設定
+// --- 永続化用ファイルパスの設定 ---
 const chatHistoryFile = path.join(__dirname, 'chatHistory.json');
 const usersFile = path.join(__dirname, 'users.json');
 
-// ユーザー情報の永続化：users.json
-let users = [];
-if (fs.existsSync(usersFile)) {
-  try {
-    users = JSON.parse(fs.readFileSync(usersFile));
-  } catch (e) {
-    console.error('Error reading users file:', e);
-    users = [];
-  }
-}
-
-// チャット履歴の永続化：chatHistory.json
+// --- 起動時にファイルからデータを読み込む ---
 let chatHistory = {};
 if (fs.existsSync(chatHistoryFile)) {
   try {
-    chatHistory = JSON.parse(fs.readFileSync(chatHistoryFile));
+    chatHistory = JSON.parse(fs.readFileSync(chatHistoryFile, 'utf8'));
   } catch (e) {
     console.error('Error reading chatHistory file:', e);
     chatHistory = {};
   }
 }
 
-// ユーザー登録
+let users = [];
+if (fs.existsSync(usersFile)) {
+  try {
+    users = JSON.parse(fs.readFileSync(usersFile, 'utf8'));
+  } catch (e) {
+    console.error('Error reading users file:', e);
+    users = [];
+  }
+}
+
+// --- ユーザー登録 ---
 app.post('/register', (req, res) => {
   const { username, password } = req.body;
   if (users.find(u => u.username === username)) {
@@ -46,7 +45,7 @@ app.post('/register', (req, res) => {
   res.json({ message: '登録成功', user: newUser });
 });
 
-// ログイン
+// --- ログイン ---
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   let user = users.find(u => u.username === username && u.password === password);
@@ -56,14 +55,14 @@ app.post('/login', (req, res) => {
   res.json({ message: 'ログイン成功', user });
 });
 
-// ユーザー一覧取得（ログインユーザー除く）
+// --- ユーザー一覧取得（ログインユーザー除く） ---
 app.get('/users', (req, res) => {
   const { username } = req.query;
   const filtered = users.filter(u => u.username !== username).map(u => u.username);
   res.json({ users: filtered });
 });
 
-// 友達追加リクエスト送信
+// --- 友達追加リクエスト送信 ---
 app.post('/sendFriendRequest', (req, res) => {
   const { from, to } = req.body;
   let targetUser = users.find(u => u.username === to);
@@ -79,7 +78,7 @@ app.post('/sendFriendRequest', (req, res) => {
   io.to(to).emit('friendRequest', { from });
 });
 
-// 友達リクエスト取得
+// --- 友達リクエスト取得 ---
 app.get('/friendRequests', (req, res) => {
   const { username } = req.query;
   let user = users.find(u => u.username === username);
@@ -89,7 +88,7 @@ app.get('/friendRequests', (req, res) => {
   res.json({ friendRequests: user.friendRequests });
 });
 
-// 友達リクエスト応答（承認／拒否）
+// --- 友達リクエスト応答 ---
 app.post('/respondFriendRequest', (req, res) => {
   const { username, from, response } = req.body;
   let user = users.find(u => u.username === username);
@@ -116,7 +115,7 @@ app.post('/respondFriendRequest', (req, res) => {
   fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
 });
 
-// 承認済み友達一覧取得
+// --- 承認済み友達一覧取得 ---
 app.get('/approvedFriends', (req, res) => {
   const { username } = req.query;
   let user = users.find(u => u.username === username);
@@ -126,7 +125,7 @@ app.get('/approvedFriends', (req, res) => {
   res.json({ approvedFriends: user.approvedFriends });
 });
 
-// ユーザー情報更新（設定）
+// --- ユーザー情報更新（設定） ---
 app.post('/updateUser', (req, res) => {
   const { username, newUsername, newPassword, birthday } = req.body;
   let user = users.find(u => u.username === username);
@@ -140,7 +139,7 @@ app.post('/updateUser', (req, res) => {
   res.json({ message: 'ユーザー情報を更新しました', user });
 });
 
-// チャット履歴取得
+// --- チャット履歴取得 ---
 app.get('/chatHistory', (req, res) => {
   const { user1, user2 } = req.query;
   if (!user1 || !user2) {
@@ -151,11 +150,11 @@ app.get('/chatHistory', (req, res) => {
   res.json({ chatHistory: history });
 });
 
-// Socket.IO によるリアルタイムチャット処理
+// --- Socket.IO によるリアルタイムチャット処理 ---
 io.on('connection', (socket) => {
   console.log('a user connected');
   
-  // ユーザー名を受け取り、専用ルームに参加
+  // ユーザー名を受け取り、そのユーザー専用のルームに参加
   socket.on('join', (username) => {
     socket.username = username;
     socket.join(username);
@@ -165,19 +164,18 @@ io.on('connection', (socket) => {
   // プライベートメッセージ送信
   socket.on('private message', (data) => {
     const msgObj = {
-      id: Date.now() + '-' + Math.floor(Math.random()*1000),
+      id: Date.now() + '-' + Math.floor(Math.random() * 1000),
       from: socket.username,
       to: data.to,
       message: data.message,
       timestamp: new Date().toISOString(),
       read: false
     };
-    // 送信先へリアルタイム送信
+    // 送信相手へ
     io.to(data.to).emit('private message', msgObj);
-    // 自分にも送信（表示用）
+    // 自分にも表示
     socket.emit('private message', msgObj);
     
-    // チャット履歴に保存
     const conversationKey = [socket.username, data.to].sort().join('|');
     if (!chatHistory[conversationKey]) {
       chatHistory[conversationKey] = [];
