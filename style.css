@@ -81,17 +81,21 @@ input[readonly] {
 }
 .message-input {
   display: flex;
+  flex-direction: column;
 }
-.message-input input {
+.message-input textarea {
   flex: 1;
   padding: 10px;
   border: 1px solid #ccc;
   width: 100%;
   box-sizing: border-box;
   resize: none; /* ユーザーによるリサイズ禁止 */
+  font-family: inherit;
 }
 .message-input button {
   padding: 10px;
+  align-self: flex-end;
+  margin-top: 5px;
 }
 button {
   cursor: pointer;
@@ -130,6 +134,23 @@ button {
   display: inline-block;
   font-size: 0.7em;
   color: blue;
+}
+
+/* リプライプレビュー */
+.reply-preview {
+  border-left: 3px solid #ccc;
+  padding-left: 5px;
+  font-size: 0.8em;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+/* 返信ボタン */
+.reply-button {
+  margin-left: 10px;
+  font-size: 0.8em;
+  color: #007aff;
+  cursor: pointer;
 }
 
 /* モーダル styling */

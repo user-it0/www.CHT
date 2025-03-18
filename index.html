@@ -73,9 +73,12 @@
     <div class="chat-container">
       <div class="message-history" id="message-history"></div>
       <div class="message-input">
-        <input type="text" id="chat-input" placeholder="メッセージを入力">
+        <!-- 送信入力は textarea に変更し改行対応 -->
+        <textarea id="chat-input" placeholder="メッセージを入力"></textarea>
         <button id="send-message">送信</button>
       </div>
+      <!-- リプライプレビュー表示エリア -->
+      <div id="reply-preview" class="reply-preview" style="display:none;"></div>
     </div>
   </div>
 
