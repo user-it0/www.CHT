@@ -1,410 +1,201 @@
-document.addEventListener("DOMContentLoaded", function() {
-  // Socket.IO 初期化（接続先URLはサーバーの実際のURLに合わせる）
-  const socket = io();
+const express = require('express');
+const app = express();
+const http = require('http').createServer(app);
+const socketio = require('socket.io');
+const io = socketio(http);
+const fs = require('fs');
+const path = require('path');
 
-  // グローバル変数
-  let currentUser = null;
-  let currentChatFriend = null;
-  let currentReply = null; // リプライ対象のメッセージオブジェクト
+const DATA_FILE = path.join(__dirname, 'data.json');
 
-  // DOM 要素取得
-  const pageAuth = document.getElementById("page-auth");
-  const loginForm = document.getElementById("form-login");
-  const registrationForm = document.getElementById("form-register");
-  const loginDiv = document.getElementById("login-form");
-  const registrationDiv = document.getElementById("registration-form");
-  const toRegistrationBtn = document.getElementById("to-registration");
-  const toLoginBtn = document.getElementById("to-login");
-
-  const pageHome = document.getElementById("page-home");
-  const displayUsername = document.getElementById("display-username");
-  const userSearchInput = document.getElementById("user-search");
-  const searchResultUl = document.getElementById("search-result");
-  const friendRequestsUl = document.getElementById("friend-requests");
-  const contactListUl = document.getElementById("contact-list");
-
-  const pageChat = document.getElementById("page-chat");
-  const backToHomeBtn = document.getElementById("back-to-home");
-  const messageHistory = document.getElementById("message-history");
-  const chatInput = document.getElementById("chat-input");
-  const sendMessageBtn = document.getElementById("send-message");
-  const replyPreview = document.getElementById("reply-preview");
-
-  const openSettingsBtn = document.getElementById("open-settings");
-  const settingsPanel = document.getElementById("settings-panel");
-  const closeSettingsBtn = document.getElementById("close-settings");
-  const settingsForm = document.getElementById("settings-form");
-
-  /*---------------------------
-    ページ・フォーム切替用の関数
-  ---------------------------*/
-  function showPage(showElem) {
-    document.querySelectorAll('.page').forEach(page => {
-      page.style.opacity = 0;
-      setTimeout(() => { page.style.display = "none"; }, 500);
-    });
-    setTimeout(() => {
-      showElem.style.display = "block";
-      setTimeout(() => { showElem.style.opacity = 1; }, 50);
-    }, 500);
+// 永続データの初期化
+let data = { users: [], chatHistory: {} };
+if (fs.existsSync(DATA_FILE)) {
+  try {
+    const fileContent = fs.readFileSync(DATA_FILE, 'utf8');
+    data = JSON.parse(fileContent);
+  } catch (err) {
+    console.error('Error reading data.json:', err);
   }
+} else {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+}
+
+app.use(express.json());
+// 静的ファイル（index.html, style.css, script.js）をルートから提供
+app.use(express.static(__dirname));
+
+// ヘルパー：データ保存関数
+function saveData() {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+}
+
+// API エンドポイント
+
+// ユーザー登録
+app.post('/register', (req, res) => {
+  const { username, password } = req.body;
+  if (data.users.find(u => u.username === username)) {
+    return res.status(400).json({ error: 'ユーザー名は既に存在します' });
+  }
+  const newUser = { username, password, birthday: null, approvedFriends: [], friendRequests: [] };
+  data.users.push(newUser);
+  saveData();
+  res.json({ message: '登録成功', user: newUser });
+});
+
+// ログイン
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  const user = data.users.find(u => u.username === username && u.password === password);
+  if (!user) {
+    return res.status(401).json({ error: '認証失敗' });
+  }
+  res.json({ message: 'ログイン成功', user });
+});
+
+// ユーザー一覧取得（ログインユーザーを除く）
+app.get('/users', (req, res) => {
+  const { username } = req.query;
+  const userList = data.users.filter(u => u.username !== username).map(u => u.username);
+  res.json({ users: userList });
+});
+
+// 友達追加リクエスト送信
+app.post('/sendFriendRequest', (req, res) => {
+  const { from, to } = req.body;
+  const target = data.users.find(u => u.username === to);
+  if (!target) {
+    return res.status(404).json({ error: '対象ユーザーが見つかりません' });
+  }
+  if (target.friendRequests.includes(from)) {
+    return res.status(400).json({ error: '既にリクエストを送信済みです' });
+  }
+  target.friendRequests.push(from);
+  saveData();
+  res.json({ message: '友達追加リクエストを送信しました' });
+  // リアルタイム通知：対象ユーザーのルームに送信
+  io.to(to).emit('friendRequest', { from });
+});
+
+// 友達リクエスト取得
+app.get('/friendRequests', (req, res) => {
+  const { username } = req.query;
+  const user = data.users.find(u => u.username === username);
+  if (!user) return res.status(404).json({ error: 'ユーザーが見つかりません' });
+  res.json({ friendRequests: user.friendRequests });
+});
+
+// 友達リクエスト応答（承認／拒否）およびリアルタイム更新
+app.post('/respondFriendRequest', (req, res) => {
+  const { username, from, response } = req.body;
+  const user = data.users.find(u => u.username === username);
+  if (!user) return res.status(404).json({ error: 'ユーザーが見つかりません' });
+  const index = user.friendRequests.indexOf(from);
+  if (index === -1) return res.status(400).json({ error: 'リクエストが存在しません' });
+  user.friendRequests.splice(index, 1);
+  let replyMsg = '';
+  if (response === 'accept') {
+    if (!user.approvedFriends.includes(from)) {
+      user.approvedFriends.push(from);
+    }
+    const fromUser = data.users.find(u => u.username === from);
+    if (fromUser && !fromUser.approvedFriends.includes(username)) {
+      fromUser.approvedFriends.push(username);
+    }
+    replyMsg = '友達追加リクエストを承認しました';
+    res.json({ message: replyMsg });
+  } else {
+    replyMsg = '友達追加リクエストを拒否しました';
+    res.json({ message: replyMsg });
+  }
+  saveData();
+  // リアルタイム更新：両者のルームへ更新通知
+  io.to(username).emit('updateFriendList');
+  io.to(from).emit('updateFriendList');
+});
+
+// 承認済み友達一覧取得
+app.get('/approvedFriends', (req, res) => {
+  const { username } = req.query;
+  const user = data.users.find(u => u.username === username);
+  if (!user) return res.status(404).json({ error: 'ユーザーが見つかりません' });
+  res.json({ approvedFriends: user.approvedFriends });
+});
+
+// ユーザー情報更新（設定）
+app.post('/updateUser', (req, res) => {
+  const { username, newUsername, newPassword, birthday } = req.body;
+  const user = data.users.find(u => u.username === username);
+  if (!user) return res.status(404).json({ error: 'ユーザーが見つかりません' });
+  if (newUsername) user.username = newUsername;
+  if (newPassword) user.password = newPassword;
+  if (birthday) user.birthday = birthday;
+  saveData();
+  res.json({ message: 'ユーザー情報を更新しました', user });
+});
+
+// チャット履歴取得
+app.get('/chatHistory', (req, res) => {
+  const { user1, user2 } = req.query;
+  if (!user1 || !user2) return res.status(400).json({ error: 'user1 and user2 are required' });
+  const convKey = [user1, user2].sort().join('|');
+  const history = data.chatHistory[convKey] || [];
+  res.json({ chatHistory: history });
+});
+
+// Socket.IO によるリアルタイム通信
+io.on('connection', (socket) => {
+  console.log('A user connected');
   
-  // 滑らかなフォーム切替（ログイン⇔新規登録）
-  function fadeOut(elem, callback) {
-    elem.style.opacity = 0;
-    setTimeout(() => {
-      elem.style.display = "none";
-      if (callback) callback();
-    }, 500);
-  }
-  function fadeIn(elem) {
-    elem.style.display = "block";
-    setTimeout(() => { elem.style.opacity = 1; }, 50);
-  }
-
-  // フォーム切替ボタン
-  toRegistrationBtn.addEventListener("click", function() {
-    fadeOut(loginDiv, () => {
-      fadeIn(registrationDiv);
-    });
+  // ユーザー名でルームに参加
+  socket.on('join', (username) => {
+    socket.username = username;
+    socket.join(username);
+    console.log(username + ' joined their room');
   });
-  toLoginBtn.addEventListener("click", function() {
-    fadeOut(registrationDiv, () => {
-      fadeIn(loginDiv);
-    });
-  });
-
-  // 新規ユーザー登録
-  registrationForm.addEventListener("submit", async function(e) {
-    e.preventDefault();
-    const username = document.getElementById("register-username").value;
-    const password = document.getElementById("register-password").value;
-    try {
-      const res = await fetch('/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json();
-      if(data.error) {
-        alert(data.error);
-      } else {
-        currentUser = data.user;
-        alert("登録成功: " + currentUser.username);
-        showHomePage();
-      }
-    } catch(err) {
-      console.error(err);
-    }
-  });
-
-  // ログイン処理
-  loginForm.addEventListener("submit", async function(e) {
-    e.preventDefault();
-    const username = document.getElementById("login-username").value;
-    const password = document.getElementById("login-password").value;
-    try {
-      const res = await fetch('/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json();
-      if(data.error) {
-        alert(data.error);
-      } else {
-        currentUser = data.user;
-        alert("ログイン成功: " + currentUser.username);
-        showHomePage();
-      }
-    } catch(err) {
-      console.error(err);
-    }
-  });
-
-  // ホーム画面表示
-  function showHomePage() {
-    displayUsername.value = currentUser.username;
-    showPage(pageHome);
-    socket.emit('join', currentUser.username);
-    loadApprovedFriends();
-    loadFriendRequests();
-  }
-
-  // 戻るボタンの機能（チャット画面からホーム画面へ戻る）
-  backToHomeBtn.addEventListener("click", function() {
-    showPage(pageHome);
-    // リプライ対象があればクリア
-    currentReply = null;
-    replyPreview.style.display = "none";
-  });
-
-  // 承認済み友達一覧取得
-  async function loadApprovedFriends() {
-    try {
-      const res = await fetch(`/approvedFriends?username=${currentUser.username}`);
-      const data = await res.json();
-      renderApprovedFriends(data.approvedFriends);
-    } catch(err) {
-      console.error(err);
-    }
-  }
-
-  // 承認済み友達リストレンダリング
-  function renderApprovedFriends(friends) {
-    contactListUl.innerHTML = "";
-    friends.forEach(friend => {
-      const li = document.createElement("li");
-      li.textContent = friend;
-      li.className = "contact-item";
-      li.addEventListener("click", function() {
-         openChat(friend);
-      });
-      contactListUl.appendChild(li);
-    });
-  }
-
-  // 友達リクエスト取得
-  async function loadFriendRequests() {
-    try {
-      const res = await fetch(`/friendRequests?username=${currentUser.username}`);
-      const data = await res.json();
-      renderFriendRequests(data.friendRequests);
-    } catch(err) {
-      console.error(err);
-    }
-  }
-
-  // 友達リクエストレンダリング
-  function renderFriendRequests(requests) {
-    friendRequestsUl.innerHTML = "";
-    requests.forEach(requester => {
-      const li = document.createElement("li");
-      li.textContent = requester;
-      li.className = "contact-item";
-      const acceptBtn = document.createElement("button");
-      acceptBtn.textContent = "承認";
-      acceptBtn.addEventListener("click", function() {
-        respondFriendRequest(requester, 'accept');
-      });
-      const declineBtn = document.createElement("button");
-      declineBtn.textContent = "拒否";
-      declineBtn.addEventListener("click", function() {
-        respondFriendRequest(requester, 'decline');
-      });
-      li.appendChild(acceptBtn);
-      li.appendChild(declineBtn);
-      friendRequestsUl.appendChild(li);
-    });
-  }
-
-  // 友達リクエスト応答（リアルタイム更新）
-  async function respondFriendRequest(from, response) {
-    try {
-      const res = await fetch('/respondFriendRequest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: currentUser.username, from, response })
-      });
-      const data = await res.json();
-      alert(data.message);
-      loadFriendRequests();
-      loadApprovedFriends();
-    } catch(err) {
-      console.error(err);
-    }
-  }
-
-  // ユーザー検索（検索結果は検索欄の下に表示）
-  userSearchInput.addEventListener("input", async function() {
-    const query = this.value.trim().toLowerCase();
-    searchResultUl.innerHTML = "";
-    if(query === "") return;
-    try {
-      const res = await fetch(`/users?username=${currentUser.username}`);
-      const data = await res.json();
-      const results = data.users.filter(u => u.toLowerCase().includes(query));
-      results.forEach(user => {
-        const li = document.createElement("li");
-        li.textContent = user;
-        li.className = "contact-item";
-        li.addEventListener("click", async function() {
-          try {
-            const res = await fetch('/sendFriendRequest', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ from: currentUser.username, to: user })
-            });
-            const resultData = await res.json();
-            alert(resultData.message || resultData.error);
-          } catch(err) {
-            console.error(err);
-          }
-        });
-        searchResultUl.appendChild(li);
-      });
-    } catch(err) {
-      console.error(err);
-    }
-  });
-
-  // 設定パネルの表示／非表示
-  openSettingsBtn.addEventListener("click", function() {
-    settingsPanel.style.display = "block";
-  });
-  closeSettingsBtn.addEventListener("click", function() {
-    settingsPanel.style.display = "none";
-  });
-
-  // 設定更新
-  settingsForm.addEventListener("submit", async function(e) {
-    e.preventDefault();
-    const newUsername = document.getElementById("new-username").value;
-    const newPassword = document.getElementById("new-password").value;
-    const birthday = document.getElementById("birthday").value;
-    if(confirm("設定を保存しますか？")) {
-      try {
-        const res = await fetch('/updateUser', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username: currentUser.username,
-            newUsername,
-            newPassword,
-            birthday
-          })
-        });
-        const data = await res.json();
-        alert(data.message);
-        currentUser = data.user;
-        displayUsername.value = currentUser.username;
-        settingsPanel.style.display = "none";
-      } catch(err) {
-        console.error(err);
-      }
-    }
-  });
-
-  // リプライ機能：返信対象を設定しプレビュー表示
-  function setReply(targetMsg) {
-    currentReply = targetMsg;
-    replyPreview.style.display = "block";
-    replyPreview.innerText = "返信対象: " + (targetMsg.message.length > 30 ? targetMsg.message.substr(0, 30) + "…" : targetMsg.message);
-  }
-
-  // クリアリプライ
-  function clearReply() {
-    currentReply = null;
-    replyPreview.style.display = "none";
-  }
-
-  // メッセージ追加（左右配置、タイムスタンプ・既読状態およびリプライ表示）
-  function appendMessage(msgObj) {
-    // 重複表示防止（自分の送信メッセージは既に追加済みならスキップ）
-    if (msgObj.from === currentUser.username && document.querySelector(`[data-id="${msgObj.id}"]`)) return;
-    const div = document.createElement("div");
-    if(msgObj.from === currentUser.username) {
-      div.className = "message-self";
-    } else {
-      div.className = "message-other";
-    }
-    // もしメッセージに replyTo がある場合、表示する
-    if(msgObj.replyTo) {
-      const replyDiv = document.createElement("div");
-      replyDiv.className = "reply-preview";
-      replyDiv.innerText = "返信: " + (msgObj.replyTo.message.length > 30 ? msgObj.replyTo.message.substr(0, 30) + "…" : msgObj.replyTo.message);
-      div.appendChild(replyDiv);
-    }
-    const textDiv = document.createElement("div");
-    textDiv.innerText = msgObj.message;
-    div.appendChild(textDiv);
-    // タイムスタンプと既読状態
-    const infoSpan = document.createElement("span");
-    infoSpan.className = "timestamp";
-    infoSpan.innerText = new Date(msgObj.timestamp).toLocaleString();
-    div.appendChild(infoSpan);
-    if(msgObj.from === currentUser.username) {
-      div.setAttribute("data-id", msgObj.id);
-      const readStatus = document.createElement("span");
-      readStatus.className = "read-status";
-      readStatus.innerText = msgObj.read ? "既読" : "未読";
-      div.appendChild(readStatus);
-    }
-    // 返信ボタンを追加（すべてのメッセージに対して）
-    const replyBtn = document.createElement("span");
-    replyBtn.className = "reply-button";
-    replyBtn.innerText = "返信";
-    replyBtn.addEventListener("click", function() {
-      setReply(msgObj);
-    });
-    div.appendChild(replyBtn);
-    messageHistory.appendChild(div);
-  }
-
-  // チャット送信
-  sendMessageBtn.addEventListener("click", function() {
-    const msg = chatInput.value.trim();
-    if(msg === "" || !currentChatFriend) return;
-    const msgId = Date.now() + '-' + Math.floor(Math.random() * 1000);
-    const timestamp = new Date().toISOString();
+  
+  // プライベートメッセージ送信（送信者は自分側で表示済みのためエコーは行わない）
+  socket.on('private message', (msgData) => {
     const msgObj = {
-      id: msgId,
-      from: currentUser.username,
-      to: currentChatFriend,
-      message: msg,
-      timestamp: timestamp,
+      id: Date.now() + '-' + Math.floor(Math.random() * 1000),
+      from: socket.username,
+      to: msgData.to,
+      message: msgData.message,
+      timestamp: new Date().toISOString(),
       read: false,
-      replyTo: currentReply ? currentReply : null
+      replyTo: msgData.replyTo || null
     };
-    appendMessage(msgObj);
-    // 送信時、リプライ対象があればクリア
-    clearReply();
-    socket.emit('private message', { to: currentChatFriend, message: msg, replyTo: currentReply });
-    chatInput.value = "";
-    messageHistory.scrollTop = messageHistory.scrollHeight;
-  });
-
-  // プライベートメッセージ受信
-  socket.on('private message', (data) => {
-    if(data.from !== currentUser.username) {
-      appendMessage(data);
-      messageHistory.scrollTop = messageHistory.scrollHeight;
-      // チャット画面が開いており、対象が現在のチャット相手なら既読処理
-      if(pageChat.style.display !== "none" && currentChatFriend === data.from) {
-        socket.emit('markRead', { user1: currentUser.username, user2: data.from });
-      }
-      // ブラウザ通知（音は鳴らさず）
-      if (Notification.permission === "granted") {
-        new Notification("新着メッセージ", { body: data.message });
-      } else if (Notification.permission !== "denied") {
-        Notification.requestPermission().then(permission => {
-          if (permission === "granted") {
-            new Notification("新着メッセージ", { body: data.message });
-          }
-        });
-      }
+    io.to(msgData.to).emit('private message', msgObj);
+    // 永続チャット履歴に保存
+    const convKey = [socket.username, msgData.to].sort().join('|');
+    if (!data.chatHistory[convKey]) {
+      data.chatHistory[convKey] = [];
     }
-  });
-
-  // 既読通知受信（リアルタイム更新）
-  socket.on('readReceipt', (data) => {
-    data.messageIds.forEach(id => {
-      const el = document.querySelector(`[data-id="${id}"] .read-status`);
-      if (el) {
-        el.innerText = "既読";
-      }
-    });
-  });
-
-  // リアルタイム友達リクエスト受信
-  socket.on('friendRequest', (data) => {
-    alert("新しい友達リクエスト: " + data.from);
-    loadFriendRequests();
+    data.chatHistory[convKey].push(msgObj);
+    saveData();
   });
   
-  // リアルタイム更新で連絡可能ユーザーリスト更新
-  socket.on('updateFriendList', () => {
-    loadApprovedFriends();
-    loadFriendRequests();
+  // 既読処理：チャット画面が開いている場合、受信したメッセージを既読にする
+  socket.on('markRead', (info) => {
+    const convKey = [info.user1, info.user2].sort().join('|');
+    if (data.chatHistory[convKey]) {
+      const updatedIds = [];
+      data.chatHistory[convKey] = data.chatHistory[convKey].map(msg => {
+        if (msg.from === info.user2 && !msg.read) {
+          msg.read = true;
+          updatedIds.push(msg.id);
+        }
+        return msg;
+      });
+      saveData();
+      // 既読通知を送信（送信側へ）
+      io.to(info.user2).emit('readReceipt', { messageIds: updatedIds });
+    }
   });
+});
+
+const PORT = process.env.PORT || 3000;
+http.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
 });

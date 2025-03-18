@@ -134,9 +134,7 @@ document.addEventListener("DOMContentLoaded", function() {
   // 戻るボタンの機能（チャット画面からホーム画面へ戻る）
   backToHomeBtn.addEventListener("click", function() {
     showPage(pageHome);
-    // リプライ対象があればクリア
-    currentReply = null;
-    replyPreview.style.display = "none";
+    clearReply();
   });
 
   // 承認済み友達一覧取得
@@ -298,7 +296,36 @@ document.addEventListener("DOMContentLoaded", function() {
     replyPreview.style.display = "none";
   }
 
-  // メッセージ追加（左右配置、タイムスタンプ・既読状態およびリプライ表示）
+  // チャット画面を開く（履歴取得＆既読処理）
+  function openChat(friend) {
+    currentChatFriend = friend;
+    showPage(pageChat);
+    messageHistory.innerHTML = "";
+    fetch(`/chatHistory?user1=${currentUser.username}&user2=${friend}`)
+      .then(res => res.json())
+      .then(data => {
+         if(data.chatHistory && data.chatHistory.length > 0) {
+             data.chatHistory.forEach(msgObj => {
+                 appendMessage(msgObj);
+             });
+         } else {
+             const welcome = document.createElement("div");
+             welcome.innerText = "チャット開始: " + friend;
+             messageHistory.appendChild(welcome);
+         }
+         messageHistory.scrollTop = messageHistory.scrollHeight;
+         // チャット画面が開いているので既読処理を実行
+         socket.emit('markRead', { user1: currentUser.username, user2: friend });
+      })
+      .catch(err => {
+         console.error(err);
+         const welcome = document.createElement("div");
+         welcome.innerText = "チャット開始: " + friend;
+         messageHistory.appendChild(welcome);
+      });
+  }
+
+  // メッセージ追加（左右配置、タイムスタンプ・既読状態、リプライ表示）
   function appendMessage(msgObj) {
     // 重複表示防止（自分の送信メッセージは既に追加済みならスキップ）
     if (msgObj.from === currentUser.username && document.querySelector(`[data-id="${msgObj.id}"]`)) return;
@@ -308,7 +335,7 @@ document.addEventListener("DOMContentLoaded", function() {
     } else {
       div.className = "message-other";
     }
-    // もしメッセージに replyTo がある場合、表示する
+    // リプライ表示（返信対象がある場合）
     if(msgObj.replyTo) {
       const replyDiv = document.createElement("div");
       replyDiv.className = "reply-preview";
@@ -330,7 +357,7 @@ document.addEventListener("DOMContentLoaded", function() {
       readStatus.innerText = msgObj.read ? "既読" : "未読";
       div.appendChild(readStatus);
     }
-    // 返信ボタンを追加（すべてのメッセージに対して）
+    // 返信ボタンの追加（すべてのメッセージに対して）
     const replyBtn = document.createElement("span");
     replyBtn.className = "reply-button";
     replyBtn.innerText = "返信";
@@ -357,7 +384,6 @@ document.addEventListener("DOMContentLoaded", function() {
       replyTo: currentReply ? currentReply : null
     };
     appendMessage(msgObj);
-    // 送信時、リプライ対象があればクリア
     clearReply();
     socket.emit('private message', { to: currentChatFriend, message: msg, replyTo: currentReply });
     chatInput.value = "";
@@ -366,14 +392,15 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // プライベートメッセージ受信
   socket.on('private message', (data) => {
+    // 自分が送信したメッセージは重複しない
     if(data.from !== currentUser.username) {
       appendMessage(data);
       messageHistory.scrollTop = messageHistory.scrollHeight;
-      // チャット画面が開いており、対象が現在のチャット相手なら既読処理
+      // チャット画面が開いており、対象が現在のチャット相手なら既読処理を実行
       if(pageChat.style.display !== "none" && currentChatFriend === data.from) {
         socket.emit('markRead', { user1: currentUser.username, user2: data.from });
       }
-      // ブラウザ通知（音は鳴らさず）
+      // ブラウザ通知（音なし）
       if (Notification.permission === "granted") {
         new Notification("新着メッセージ", { body: data.message });
       } else if (Notification.permission !== "denied") {
