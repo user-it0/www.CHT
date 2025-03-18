@@ -8,7 +8,7 @@ const path = require('path');
 
 const DATA_FILE = path.join(__dirname, 'data.json');
 
-// 永続データの初期化
+// 永続データの初期化（data.json が存在すれば内容を読み込む）
 let data = { users: [], chatHistory: {} };
 if (fs.existsSync(DATA_FILE)) {
   try {
@@ -25,7 +25,7 @@ app.use(express.json());
 // 静的ファイル（index.html, style.css, script.js）をルートから提供
 app.use(express.static(__dirname));
 
-// ヘルパー：データ保存関数
+// ヘルパー：データ保存関数（同期的に確実に書き込み）
 function saveData() {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
@@ -74,7 +74,7 @@ app.post('/sendFriendRequest', (req, res) => {
   target.friendRequests.push(from);
   saveData();
   res.json({ message: '友達追加リクエストを送信しました' });
-  // リアルタイム通知：対象ユーザーのルームに送信
+  // リアルタイム通知：対象ユーザーのルームへ送信
   io.to(to).emit('friendRequest', { from });
 });
 
@@ -176,7 +176,7 @@ io.on('connection', (socket) => {
     saveData();
   });
   
-  // 既読処理：チャット画面が開いている場合、受信したメッセージを既読にする
+  // 既読処理：チャット画面が開いている場合、受信した相手メッセージを既読にする
   socket.on('markRead', (info) => {
     const convKey = [info.user1, info.user2].sort().join('|');
     if (data.chatHistory[convKey]) {

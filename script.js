@@ -357,7 +357,7 @@ document.addEventListener("DOMContentLoaded", function() {
       readStatus.innerText = msgObj.read ? "既読" : "未読";
       div.appendChild(readStatus);
     }
-    // 返信ボタンの追加（すべてのメッセージに対して）
+    // 返信ボタンを追加（すべてのメッセージに対して）
     const replyBtn = document.createElement("span");
     replyBtn.className = "reply-button";
     replyBtn.innerText = "返信";
@@ -392,15 +392,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // プライベートメッセージ受信
   socket.on('private message', (data) => {
-    // 自分が送信したメッセージは重複しない
     if(data.from !== currentUser.username) {
       appendMessage(data);
       messageHistory.scrollTop = messageHistory.scrollHeight;
-      // チャット画面が開いており、対象が現在のチャット相手なら既読処理を実行
       if(pageChat.style.display !== "none" && currentChatFriend === data.from) {
         socket.emit('markRead', { user1: currentUser.username, user2: data.from });
       }
-      // ブラウザ通知（音なし）
       if (Notification.permission === "granted") {
         new Notification("新着メッセージ", { body: data.message });
       } else if (Notification.permission !== "denied") {
