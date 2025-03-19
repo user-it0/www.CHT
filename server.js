@@ -8,7 +8,7 @@ const path = require('path');
 
 const DATA_FILE = path.join(__dirname, 'data.json');
 
-// 永続データの初期化（data.json が存在すれば内容を読み込む）
+// 永続データの初期化（data.json が存在すれば読み込む）
 let data = { users: [], chatHistory: {} };
 if (fs.existsSync(DATA_FILE)) {
   try {
@@ -22,17 +22,17 @@ if (fs.existsSync(DATA_FILE)) {
 }
 
 app.use(express.json());
-// 静的ファイル（index.html, style.css, script.js）をルートから提供
+// 静的ファイル（index.html, style.css, script.js）を提供
 app.use(express.static(__dirname));
 
-// ヘルパー：データ保存関数（同期的に確実に書き込み）
+// ヘルパー：データの確実な保存（同期的に書き込み）
 function saveData() {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
 // API エンドポイント
 
-// ユーザー登録
+// ユーザー登録：新規ユーザーの情報（ユーザー名、パスワード、誕生日、友達リストなど）を data.json に追加
 app.post('/register', (req, res) => {
   const { username, password } = req.body;
   if (data.users.find(u => u.username === username)) {
@@ -44,7 +44,7 @@ app.post('/register', (req, res) => {
   res.json({ message: '登録成功', user: newUser });
 });
 
-// ログイン
+// ログイン：登録済みユーザーの認証
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   const user = data.users.find(u => u.username === username && u.password === password);
@@ -54,14 +54,14 @@ app.post('/login', (req, res) => {
   res.json({ message: 'ログイン成功', user });
 });
 
-// ユーザー一覧取得（ログインユーザーを除く）
+// ユーザー一覧取得（ログインユーザー以外）
 app.get('/users', (req, res) => {
   const { username } = req.query;
   const userList = data.users.filter(u => u.username !== username).map(u => u.username);
   res.json({ users: userList });
 });
 
-// 友達追加リクエスト送信
+// 友達追加リクエスト送信：対象ユーザーの friendRequests 配列に追加し、data.json を更新
 app.post('/sendFriendRequest', (req, res) => {
   const { from, to } = req.body;
   const target = data.users.find(u => u.username === to);
@@ -74,7 +74,7 @@ app.post('/sendFriendRequest', (req, res) => {
   target.friendRequests.push(from);
   saveData();
   res.json({ message: '友達追加リクエストを送信しました' });
-  // リアルタイム通知：対象ユーザーのルームへ送信
+  // リアルタイム通知：対象ユーザーに送信
   io.to(to).emit('friendRequest', { from });
 });
 
@@ -86,7 +86,7 @@ app.get('/friendRequests', (req, res) => {
   res.json({ friendRequests: user.friendRequests });
 });
 
-// 友達リクエスト応答（承認／拒否）およびリアルタイム更新
+// 友達リクエスト応答（承認／拒否）：応答後、両者の approvedFriends 配列に反映し、data.json を更新
 app.post('/respondFriendRequest', (req, res) => {
   const { username, from, response } = req.body;
   const user = data.users.find(u => u.username === username);
@@ -110,7 +110,7 @@ app.post('/respondFriendRequest', (req, res) => {
     res.json({ message: replyMsg });
   }
   saveData();
-  // リアルタイム更新：両者のルームへ更新通知
+  // リアルタイム更新：更新イベントを両者へ通知
   io.to(username).emit('updateFriendList');
   io.to(from).emit('updateFriendList');
 });
@@ -123,7 +123,7 @@ app.get('/approvedFriends', (req, res) => {
   res.json({ approvedFriends: user.approvedFriends });
 });
 
-// ユーザー情報更新（設定）
+// ユーザー情報更新（設定）：誕生日、ユーザー名、パスワードの変更を data.json に保存
 app.post('/updateUser', (req, res) => {
   const { username, newUsername, newPassword, birthday } = req.body;
   const user = data.users.find(u => u.username === username);
@@ -135,7 +135,7 @@ app.post('/updateUser', (req, res) => {
   res.json({ message: 'ユーザー情報を更新しました', user });
 });
 
-// チャット履歴取得
+// チャット履歴取得：user1 と user2 の会話履歴を data.json から返す
 app.get('/chatHistory', (req, res) => {
   const { user1, user2 } = req.query;
   if (!user1 || !user2) return res.status(400).json({ error: 'user1 and user2 are required' });
@@ -155,7 +155,7 @@ io.on('connection', (socket) => {
     console.log(username + ' joined their room');
   });
   
-  // プライベートメッセージ送信（送信者は自分側で表示済みのためエコーは行わない）
+  // プライベートメッセージ送信（送信者は自分側に表示済みなのでエコーは行わない）
   socket.on('private message', (msgData) => {
     const msgObj = {
       id: Date.now() + '-' + Math.floor(Math.random() * 1000),
@@ -176,7 +176,7 @@ io.on('connection', (socket) => {
     saveData();
   });
   
-  // 既読処理：チャット画面が開いている場合、受信した相手メッセージを既読にする
+  // 既読処理：チャット画面が開いている場合、相手からの未読メッセージを既読に更新
   socket.on('markRead', (info) => {
     const convKey = [info.user1, info.user2].sort().join('|');
     if (data.chatHistory[convKey]) {
@@ -189,7 +189,7 @@ io.on('connection', (socket) => {
         return msg;
       });
       saveData();
-      // 既読通知を送信（送信側へ）
+      // 既読通知を送信（送信側に更新を通知）
       io.to(info.user2).emit('readReceipt', { messageIds: updatedIds });
     }
   });

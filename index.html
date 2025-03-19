@@ -73,7 +73,7 @@
     <div class="chat-container">
       <div class="message-history" id="message-history"></div>
       <div class="message-input">
-        <!-- 送信入力は textarea に変更し改行対応 -->
+        <!-- 改行対応のため textarea を使用 -->
         <textarea id="chat-input" placeholder="メッセージを入力"></textarea>
         <button id="send-message">送信</button>
       </div>
@@ -108,7 +108,7 @@
     </div>
   </div>
 
-  <!-- Socket.IO クライアントライブラリ（接続先URLはサーバーの実際のURLに合わせて変更してください） -->
+  <!-- Socket.IO クライアントライブラリ（接続先URLは実際のサーバーに合わせる） -->
   <script src="/socket.io/socket.io.js"></script>
   <script src="script.js"></script>
 </body>

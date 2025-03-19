@@ -327,7 +327,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // メッセージ追加（左右配置、タイムスタンプ・既読状態、リプライ表示）
   function appendMessage(msgObj) {
-    // 重複表示防止（自分の送信メッセージは既に追加済みならスキップ）
+    // 重複表示防止：自分の送信メッセージが既に追加済みならスキップ
     if (msgObj.from === currentUser.username && document.querySelector(`[data-id="${msgObj.id}"]`)) return;
     const div = document.createElement("div");
     if(msgObj.from === currentUser.username) {
@@ -357,7 +357,7 @@ document.addEventListener("DOMContentLoaded", function() {
       readStatus.innerText = msgObj.read ? "既読" : "未読";
       div.appendChild(readStatus);
     }
-    // 返信ボタンを追加（すべてのメッセージに対して）
+    // 返信ボタンの追加（すべてのメッセージに対して）
     const replyBtn = document.createElement("span");
     replyBtn.className = "reply-button";
     replyBtn.innerText = "返信";
